@@ -42,11 +42,13 @@
     let prev = new Map();   // node id -> output color for condensers/prisms
     let beams = [];
     let inputs = new Map();
+    let counts = new Map(); // node id -> number of beams arriving
     const maxIters = comps.length * 3 + 4;
 
     for (let iter = 0; iter < maxIters; iter++) {
       beams = [];
       inputs = new Map();
+      counts = new Map();
 
       const emit = (src, angle, color) => {
         if (!color) return;
@@ -54,7 +56,10 @@
         const x2 = hit ? hit.px : src.x + Math.cos(angle) * FAR;
         const y2 = hit ? hit.py : src.y + Math.sin(angle) * FAR;
         beams.push({ x1: src.x, y1: src.y, x2, y2, color, srcId: src.id, hitId: hit ? hit.node.id : null });
-        if (hit) inputs.set(hit.node.id, (inputs.get(hit.node.id) || 0) | color);
+        if (hit) {
+          inputs.set(hit.node.id, (inputs.get(hit.node.id) || 0) | color);
+          counts.set(hit.node.id, (counts.get(hit.node.id) || 0) + 1);
+        }
       };
 
       for (const n of comps) {
@@ -81,18 +86,23 @@
       if (stable) break;
     }
 
-    for (const n of comps) n.input = inputs.get(n.id) || 0;
+    for (const n of comps) {
+      n.input = inputs.get(n.id) || 0;
+      n.beamCount = counts.get(n.id) || 0;
+    }
     return { beams };
   }
 
+  /* A well thirsts for exactly one color, carried on a single beam.
+     Blending must happen in condensers — never at the well itself. */
   function goalState(goal) {
-    if (goal.input === goal.color) return 'satisfied';
-    if ((goal.input & ~goal.color) !== 0) return 'overloaded';
+    if (goal.input === goal.color && goal.beamCount === 1) return 'satisfied';
+    if ((goal.input & ~goal.color) !== 0 || goal.beamCount > 1) return 'overloaded';
     return goal.input === 0 ? 'dark' : 'partial';
   }
 
   function isSolved(comps) {
-    return comps.every((n) => n.type !== 'goal' || n.input === n.color);
+    return comps.every((n) => n.type !== 'goal' || (n.input === n.color && n.beamCount === 1));
   }
 
   NS.ENGINE = { HIT_RADIUS, WORLD_RADIUS, FAR, castRay, simulate, isSolved, goalState, intercepts };

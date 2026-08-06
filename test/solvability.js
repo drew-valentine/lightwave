@@ -66,7 +66,33 @@ for (const seed of SEEDS) {
     }
     layouts.add(fp);
 
-    // 5. The rich generator succeeded — the trivial fallback is a last resort
+    // 5. Machinery guarantee: every prism/condenser level marks at least one
+    // goal as machinery-fed, and no emitter emits a machinery goal's color —
+    // so with the one-beam-per-well rule the machinery cannot be bypassed.
+    const machinery = lvl.comps.filter((n) => n.type === 'prism' || n.type === 'condenser');
+    if (machinery.length) {
+      const machineryColors = new Set(
+        lvl.comps.filter((n) => n.type === 'goal' && n.viaMachinery).map((n) => n.color)
+      );
+      if (!machineryColors.size) {
+        console.error(`FAIL ${seed}:${L} — has machinery but no machinery-fed goal`);
+        failures++;
+      }
+      const bypass = lvl.comps.filter(
+        (n) => n.type === 'emitter' && machineryColors.has(n.color)
+      );
+      if (bypass.length) {
+        console.error(`FAIL ${seed}:${L} — emitter color matches a machinery-fed goal (bypassable)`);
+        failures++;
+      }
+    }
+    // From level 5 on, every level must contain machinery at all.
+    if (L >= 5 && !machinery.length) {
+      console.error(`FAIL ${seed}:${L} — no machinery on a level that budgets it`);
+      failures++;
+    }
+
+    // 6. The rich generator succeeded — the trivial fallback is a last resort
     // that should never actually fire.
     if (lvl.fallback) {
       console.error(`FAIL ${seed}:${L} — degraded to trivial fallback level`);

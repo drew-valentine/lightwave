@@ -7,8 +7,8 @@
 
   const INTRO_LINES = {
     1: 'Drag the emitter to aim its beam into the well.',
-    2: 'Two beams, two wells. Every well thirsts for one color.',
-    3: 'The condenser blends every beam it drinks into one.',
+    2: 'Two beams, two wells. Each well accepts a single beam of its one color.',
+    3: 'Wells refuse crowds — blend beams in the condenser, then deliver one.',
     4: 'The prism unbraids light into its primaries.',
     5: 'Condense. Disperse. Resolve.',
     8: 'Some light belongs nowhere. Aim it into the dark.',
