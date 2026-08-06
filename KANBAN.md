@@ -2,7 +2,7 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** `feature/light-puzzle-game` — complete, merging to `main` as `v0.1.0`
+**Active branch:** none — `main` @ `v0.2.0` (last merge: `fix/machinery-required-goals`)
 **Last updated:** 2026-08-05
 
 ---
@@ -52,11 +52,24 @@ _(empty)_
 - [ ] **Performance pass: beam propagation + render budget on large boards** | Priority: P2 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Deploy: static build + hosting** | Priority: P2 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Scale solvability harness toward the 1000-seed AC** | Priority: P2 | Created: 2026-08-05 | Owner: unassigned
-  v0.1.0 ships 3 seeds × 40 levels, all passing. Widen seed coverage and wire it into CI.
+  v0.2.0 ships 10 seeds × 60 levels (600 levels), all passing. Widen seed coverage further and wire it into CI.
 
 ---
 
 ## Done
+
+### v0.2.0 — Machinery-required goals
+
+- [x] **BUG-1 — Condensers/prisms bypassable by aiming emitters directly at goals** | Priority: P0 | M | Reported: 2026-08-05 (player) | Completed: 2026-08-05 | Owner: @claude | Branch: `fix/machinery-required-goals` → `main` @ `v0.2.0`
+  Players could skip the intended puzzle entirely by pointing an emitter straight at a goal, making condensers and prisms decorative rather than necessary.
+
+  **Fix:**
+  - Wells now accept exactly one beam — a second incoming beam is an overload, not a merge, so beams can no longer be casually stacked into a goal.
+  - The generator guarantees every machinery-fed goal wears a color that no emitter on the board emits, so reaching it *provably* requires a prism or condenser. Solvable-by-construction still holds.
+
+  **Verified:**
+  - 600-level generator sweep — 10 seeds × 60 levels, zero failures and zero fallbacks.
+  - Full browser regression — 29/29 checks passing, plus targeted level 5–7 machinery checks confirming direct-aim no longer solves.
 
 ### EPIC: Core Game — Additive Light Puzzle | Priority: P0 | Started: 2026-08-05 | Completed: 2026-08-05 | Owner: @claude | Branch: `feature/light-puzzle-game` → `main` @ `v0.1.0`
 
@@ -121,3 +134,4 @@ _None currently._
 ## Release log
 
 - **v0.1.0** — 2026-08-05 — Core Game epic (CG-1 … CG-13) from `feature/light-puzzle-game`.
+- **v0.2.0** — 2026-08-05 — BUG-1: single-beam wells + machinery-required goal colors, making prisms/condensers provably necessary. From `fix/machinery-required-goals`.
