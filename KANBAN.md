@@ -2,7 +2,7 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.2.0` (last merge: `fix/machinery-required-goals`)
+**Active branch:** none — `main` @ `v0.3.0` (last merge: `feature/hover-color-labels`)
 **Last updated:** 2026-08-05
 
 ---
@@ -47,6 +47,7 @@ _(empty)_
 - [ ] **Undo: step back one placement/rotation (currently reset-only)** | Priority: P2 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Move counter + par score per level** | Priority: P3 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Accessibility: colorblind-safe mode (shape/pattern encoding alongside hue), keyboard control, reduced-motion** | Priority: P1 | Created: 2026-08-05 | Owner: unassigned
+  *Partially addressed by UX-1 (v0.3.0): hover color labels name the color of any emitter or goal well, so hue is no longer the only channel on hover. Still open: persistent per-color shape/pattern encoding that does not require hovering, keyboard control, and reduced-motion support.*
 - [ ] **Hand-authored showcase levels for the tutorial arc** | Priority: P3 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Level editor (sandbox mode)** | Priority: P3 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Performance pass: beam propagation + render budget on large boards** | Priority: P2 | Created: 2026-08-05 | Owner: unassigned
@@ -57,6 +58,18 @@ _(empty)_
 ---
 
 ## Done
+
+### v0.3.0 — Hover color labels
+
+- [x] **UX-1 — Hover color labels on emitters and goal wells** | Priority: P1 | S | Requested: 2026-08-05 (player) | Completed: 2026-08-05 | Owner: @claude | Branch: `feature/hover-color-labels` → `main` @ `v0.3.0`
+  Player feedback: colors were hard to tell apart, especially the secondaries. Hovering any emitter or goal well now fades in a subtle letterspaced caption naming its color, drawn in that component's own hue so the label and the light read as one.
+
+  **Verified:**
+  - Playwright hover test — labels appear on emitters and goal wells with the correct color name.
+  - Zero console errors.
+  - Solvability harness still green.
+
+  *Partially addresses the Accessibility item in Backlog (colorblind support); the full item — per-color shape/pattern encoding, keyboard control, reduced-motion — stays open.*
 
 ### v0.2.0 — Machinery-required goals
 
@@ -135,3 +148,4 @@ _None currently._
 
 - **v0.1.0** — 2026-08-05 — Core Game epic (CG-1 … CG-13) from `feature/light-puzzle-game`.
 - **v0.2.0** — 2026-08-05 — BUG-1: single-beam wells + machinery-required goal colors, making prisms/condensers provably necessary. From `fix/machinery-required-goals`.
+- **v0.3.0** — 2026-08-05 — UX-1: hover color labels on emitters and goal wells, addressing color-distinguishability feedback. From `feature/hover-color-labels`.
