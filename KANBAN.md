@@ -2,7 +2,7 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.4.0` (last merge: `feature/level-selector`)
+**Active branch:** none — `main` @ `v0.5.0` (last merge: `feature/radial-start-orientations`)
 **Last updated:** 2026-08-05
 
 ---
@@ -58,6 +58,21 @@ _(empty)_
 ---
 
 ## Done
+
+### v0.5.0 — Radial starting orientations
+
+- [x] **UX-3 — Rotatable pieces start aimed radially outward from board center** | Priority: P1 | S | Requested: 2026-08-05 (player) | Completed: 2026-08-05 | Owner: @claude | Branch: `feature/radial-start-orientations` → `main` @ `v0.5.0`
+  Every rotatable component — emitters, condensers, prisms — now begins each level pointing radially outward from the center of the board, so a fresh level opens as a calm, uncluttered starburst instead of a tangle of random angles.
+
+  **Details:**
+  - Applies to all rotatable component types; non-rotatable pieces are unaffected.
+  - The never-starts-solved guarantee is unchanged: the radial orientation is simulation-checked, and an escalating-jitter fallback nudges pieces off radial only if a board would otherwise open solved.
+  - That fallback never fired across a 200-level sweep — radial is compatible with unsolved starts in practice.
+
+  **Verified:**
+  - 200-level sweep — zero pre-solved boards, zero fallbacks.
+  - Solvability harness still green.
+  - Browser screenshot verified; zero console errors.
 
 ### v0.4.0 — Level selector
 
@@ -165,3 +180,4 @@ _None currently._
 - **v0.2.0** — 2026-08-05 — BUG-1: single-beam wells + machinery-required goal colors, making prisms/condensers provably necessary. From `fix/machinery-required-goals`.
 - **v0.3.0** — 2026-08-05 — UX-1: hover color labels on emitters and goal wells, addressing color-distinguishability feedback. From `feature/hover-color-labels`.
 - **v0.4.0** — 2026-08-05 — UX-2: level selector dialog behind the level badge — roman-numeral grid of unlocked levels, `lw_max` persistence, Esc/click-outside close, focus management, ARIA dialog semantics. From `feature/level-selector`.
+- **v0.5.0** — 2026-08-05 — UX-3: radial starting orientations for all rotatable pieces (emitters/condensers/prisms), giving each level a calm starburst opening; never-starts-solved guarantee preserved via simulation check + escalating-jitter fallback. From `feature/radial-start-orientations`.
