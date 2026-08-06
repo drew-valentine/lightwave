@@ -3,7 +3,7 @@
 A browser-playable puzzle game about the properties of light.
 
 **Active branch:** none — `main` @ `v0.7.0` (last merge: `feature/win-affirmations`)
-**Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll). The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-3.
+**Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll), with builds **requested via the Pages API** by `.github/workflows/request-pages-build.yml` on every push to `main`. Push-triggered builds fail server-side for this repo; API-requested builds succeed. The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-4.
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
 **Last updated:** 2026-08-06
 
@@ -88,6 +88,8 @@ _(empty)_
   - Zero console errors on the live site.
 
 - [x] **OPS-3 — Resolve the GitHub Pages outage: recreate the site in legacy branch mode** | Priority: P0 | M | Created: 2026-08-06 | Completed: 2026-08-06 | Owner: @claude
+  **⚠ Operational guidance superseded by OPS-4.** The legacy-branch-mode recreation below is still the live configuration, but the assumption that pushes to `main` would reliably trigger builds did not hold — see OPS-4 for the root cause and the API-requested-build fix.
+
   *Supersedes OPS-2.* The Pages **site record** — not the workflow — was corrupted. Deployments reported success and then immediately went inactive; newly queued deploys sat until they died at the server-side 10-minute cap; the live URL served 503 / the GitHub unicorn page. No amount of re-running or re-pointing the deployment source cleared it.
 
   **Fix:**
@@ -98,7 +100,25 @@ _(empty)_
   **Verified:**
   - Live site serving HTTP 200 with the grain fix, the win-banner fix, and the mobile polish all confirmed in production.
 
-  **Operational note (replaces OPS-1/OPS-2 guidance):** `main` is still production, but deploys no longer show up in the Actions tab. If the live site looks stale, check the Pages build directly: `gh api repos/drew-valentine/lightwave/pages/builds/latest`. Builds are running slow — allow several minutes before treating a stale site as a failure.
+  **Operational note (replaces OPS-1/OPS-2 guidance; itself replaced by OPS-4):** `main` is still production, but deploys no longer show up in the Actions tab. If the live site looks stale, check the Pages build directly: `gh api repos/drew-valentine/lightwave/pages/builds/latest`. Builds are running slow — allow several minutes before treating a stale site as a failure.
+
+- [x] **OPS-4 — Final deploy pipeline resolution: request Pages builds via the API on every push** | Priority: P0 | S | Created: 2026-08-06 | Completed: 2026-08-06 | Owner: @claude
+  *Supersedes all previous OPS notes.* After OPS-3 restored the site, pushes to `main` still did not reliably publish. Root cause isolated at last: **push-triggered Pages builds fail server-side for this repo** — every one returns a generic `Page build failed` with no detail, regardless of the content pushed — while **builds requested through the Pages API succeed** on the exact same commit. The trigger path is broken, not the build itself.
+
+  **Fix (shipped):**
+  - Added `.github/workflows/request-pages-build.yml`, which runs on every push to `main` and requests the build explicitly via the API (`gh api -X POST repos/drew-valentine/lightwave/pages/builds`).
+  - The workflow polls the build status to completion and retries up to **3 times**, so a transient failure self-heals without human intervention.
+
+  **Verified end-to-end:**
+  - Push `46bf077` → "Request Pages build" workflow run succeeded → Pages build reported `built` for that exact commit.
+  - **v0.7.0 confirmed live in production.**
+
+  **Deploy stack (current):**
+  1. Legacy branch builder (source: `main` @ `/`, `.nojekyll`) — the publisher.
+  2. `.github/workflows/request-pages-build.yml` — triggers the build via the API on push to `main`.
+  3. `.github/workflows/pages.yml` — `workflow_dispatch`-only manual Actions deploy, kept as fallback.
+
+  **Operational note (replaces OPS-1/OPS-2/OPS-3 guidance):** if the live site looks stale, **check the "Request Pages build" workflow run in the Actions tab first.** If that run is green, the build was requested and accepted; confirm the published commit with `gh api repos/drew-valentine/lightwave/pages/builds/latest`. If the run failed after its retries, re-run it or request a build manually. Ignore any standalone push-triggered `Page build failed` notifications — those are the known-broken trigger path, not a real deploy failure.
 
 ### v0.7.0 — Meditative win affirmations
 
@@ -289,4 +309,4 @@ _None currently._
 - **v0.6.0** — 2026-08-06 — UX-4: mobile touch polish — 44px screen-space grab targets, drag deadzone, wider touch snap tolerance, tap-to-reveal color labels, safe-area insets + `viewport-fit=cover` + `theme-color`, coarse-pointer control sizing, compact view margins, Safari `setPointerCapture` hardening. Verified on emulated iPhone 13 in both orientations with real touch events. From `feature/mobile-polish`.
 - **v0.6.1** — 2026-08-06 — BUG-2: win banner "RESOLVED" no longer wraps on narrow screens — CSS `letter-spacing` tracking replaces literal inter-letter spaces, plus `white-space: nowrap` and `clamp(18px, 6vw, 55px)` viewport-scaled sizing; verified single-line at 320px/375px/desktop. From `fix/win-banner-wrap`. Shipped alongside OPS-2, which moved Pages deployment off the silently-failing legacy Jekyll builder onto the `.github/workflows/pages.yml` GitHub Actions workflow — since superseded by OPS-3.
 - **v0.6.2** — 2026-08-06 — BUG-3: mobile "grainy graphics" fixed — beam layer widths are now floored in screen pixels, so sub-pixel strokes (core 0.6px, dashes 0.88px at the ~0.34 mobile board scale) can no longer antialias unevenly under additive blending. DPR handling verified correct and ruled out. From `fix/mobile-grain`. Shipped alongside OPS-3, which ended the Pages outage: the corrupted site record was deleted and recreated in legacy branch mode (`main` @ `/`, `.nojekyll`), with the Actions workflow demoted to a `workflow_dispatch`-only manual fallback.
-- **v0.7.0** — 2026-08-06 — UX-5: meditative win affirmations replace "RESOLVED" — a 40-phrase pool of arrival ("the light finds its way", "harmony, as it always was", …), one per level, assigned deterministically via a stride coprime to 40 so any 40 consecutive levels are distinct; soft lowercase italic Didot; win-to-next-level delay extended to 2.6s for reading time. Verified fitting at 320px/375px/desktop with zero console errors. From `feature/win-affirmations`. Deploying via the legacy Pages branch builder.
+- **v0.7.0** — 2026-08-06 — UX-5: meditative win affirmations replace "RESOLVED" — a 40-phrase pool of arrival ("the light finds its way", "harmony, as it always was", …), one per level, assigned deterministically via a stride coprime to 40 so any 40 consecutive levels are distinct; soft lowercase italic Didot; win-to-next-level delay extended to 2.6s for reading time. Verified fitting at 320px/375px/desktop with zero console errors. From `feature/win-affirmations`. Confirmed live in production via OPS-4, which fixed the deploy trigger: push-triggered Pages builds fail server-side for this repo, so `.github/workflows/request-pages-build.yml` now requests each build through the Pages API on every push to `main` (with polling + 3 retries).
