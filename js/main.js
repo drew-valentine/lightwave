@@ -162,6 +162,7 @@
     state.startedAt = performance.now();
     localStorage.setItem('lw_level', String(n));
     localStorage.setItem('lw_max', String(Math.max(n, maxLevel())));
+    document.body.classList.remove('won');
     hud.winBanner.classList.remove('visible');
     document.body.classList.add('level-enter');
     setTimeout(() => document.body.classList.remove('level-enter'), 900);
@@ -176,11 +177,18 @@
     }
   }
 
+  /* Sequence of the harmony moment (CSS carries the staggering):
+     0.00s  the last beam lands, a still beat
+     0.35s  board and HUD begin breathing down to near-dark (1.7s)
+     1.10s  the words begin to surface (2.6s drift + fade)
+     3.70s  fully present; rest with them
+     5.60s  the next level blooms in                                  */
   function onWin() {
     state.winAt = performance.now();
     hud.winBanner.querySelector('span').textContent = affirmationFor(state.level.level);
+    document.body.classList.add('won');
     hud.winBanner.classList.add('visible');
-    setTimeout(() => loadLevel(state.level.level + 1), 2600);
+    setTimeout(() => loadLevel(state.level.level + 1), 5600);
   }
 
   /* ---------- input: drag to rotate ---------- */
