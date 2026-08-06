@@ -49,10 +49,11 @@
     canvas.style.width = window.innerWidth + 'px';
     canvas.style.height = window.innerHeight + 'px';
     const w = window.innerWidth, h = window.innerHeight;
+    const compact = Math.min(w, h) < 640;
     const extent = state.level ? state.level.extent : E.WORLD_RADIUS + 80;
-    view.scale = Math.min(w - 40, h - 150) / (extent * 2);
+    view.scale = Math.min(w - (compact ? 20 : 40), h - (compact ? 112 : 150)) / (extent * 2);
     view.cx = w / 2;
-    view.cy = h / 2;
+    view.cy = h / 2 - (compact ? 8 : 0);
   }
   window.addEventListener('resize', resize);
 
@@ -131,28 +132,41 @@
 
   /* ---------- input: drag to rotate ---------- */
 
-  const GRAB_RADIUS = 52;
-  const SNAP = 0.055; // radians (~3°) of aim assist
+  const GRAB_RADIUS = 52;         // world units
+  const SNAP_MOUSE = 0.055;       // radians (~3°) of aim assist
+  const SNAP_TOUCH = 0.1;         // fingers deserve more forgiveness (~6°)
+  const TOUCH_TARGET_PX = 44;     // minimum on-screen touch target
+  const DRAG_DEADZONE_PX = 24;    // ignore angle updates this close to the pivot
 
-  function findNear(wx, wy, includeGoals) {
+  /* Grab radius in world units, floored to a comfortable on-screen target.
+     On phones the view scale shrinks; the finger target must not. */
+  function grabRadiusWorld(pointerType) {
+    const px = pointerType === 'touch' ? TOUCH_TARGET_PX : 28;
+    return Math.max(GRAB_RADIUS, px / view.scale);
+  }
+
+  function findNear(wx, wy, includeGoals, radius) {
+    const r = radius || GRAB_RADIUS;
     let best = null, bestD = Infinity;
     for (const n of state.level.comps) {
       if (!includeGoals && n.type === 'goal') continue;
       const d = Math.hypot(n.x - wx, n.y - wy);
-      if (d < GRAB_RADIUS && d < bestD) { best = n; bestD = d; }
+      if (d < r && d < bestD) { best = n; bestD = d; }
     }
     return best;
   }
 
-  function findGrabbable(wx, wy) { return findNear(wx, wy, false); }
+  function findGrabbable(wx, wy, pointerType) {
+    return findNear(wx, wy, false, grabRadiusWorld(pointerType));
+  }
 
   /* Aim assist: snap the raw angle toward directions that point a beam
      (or a prism port) at another component's center. */
-  function snapAngle(node, raw) {
+  function snapAngle(node, raw, tolerance) {
     const offs = node.type === 'prism'
       ? Object.values(node.offsets)
       : [0];
-    let best = raw, bestDiff = SNAP;
+    let best = raw, bestDiff = tolerance;
     for (const other of state.level.comps) {
       if (other.id === node.id || !E.intercepts(other)) continue;
       const dir = Math.atan2(other.y - node.y, other.x - node.x);
@@ -165,29 +179,45 @@
     return { angle: best, snapped: best !== raw };
   }
 
+  let touchLabelTimer = 0;
+
   canvas.addEventListener('pointerdown', (ev) => {
     if (state.winAt) return;
+    clearTimeout(touchLabelTimer);
     const w = view.toWorld(ev.clientX, ev.clientY);
-    const node = findGrabbable(w.x, w.y);
-    if (!node) return;
-    state.dragging = { node };
-    state.hotId = node.id;
-    if (state.hover.id !== node.id) state.hover = { id: node.id, since: performance.now() };
-    canvas.setPointerCapture(ev.pointerId);
-    canvas.classList.add('grabbing');
+    const node = findGrabbable(w.x, w.y, ev.pointerType);
+    if (node) {
+      state.dragging = { node, pointerType: ev.pointerType };
+      state.hotId = node.id;
+      if (state.hover.id !== node.id) state.hover = { id: node.id, since: performance.now() };
+      try { canvas.setPointerCapture(ev.pointerId); } catch (e) { /* pointer already gone */ }
+      canvas.classList.add('grabbing');
+      return;
+    }
+    // Touch has no hover: tapping a well reveals its color label briefly.
+    if (ev.pointerType === 'touch') {
+      const over = findNear(w.x, w.y, true, grabRadiusWorld('touch'));
+      if (over) {
+        state.hover = { id: over.id, since: performance.now() };
+        touchLabelTimer = setTimeout(() => { state.hover = { id: null, since: 0 }; }, 1600);
+      }
+    }
   });
 
   canvas.addEventListener('pointermove', (ev) => {
     const w = view.toWorld(ev.clientX, ev.clientY);
     if (state.dragging) {
       const n = state.dragging.node;
+      // A finger right on the pivot gives meaningless, jittery angles.
+      const distPx = Math.hypot(w.x - n.x, w.y - n.y) * view.scale;
+      if (distPx < DRAG_DEADZONE_PX) return;
       const raw = Math.atan2(w.y - n.y, w.x - n.x);
-      const snap = snapAngle(n, raw);
+      const snap = snapAngle(n, raw, state.dragging.pointerType === 'touch' ? SNAP_TOUCH : SNAP_MOUSE);
       n.angle = snap.angle;
       state.dragging.snapped = snap.snapped;
       resim();
-    } else {
-      const grab = findGrabbable(w.x, w.y);
+    } else if (ev.pointerType !== 'touch') {
+      const grab = findGrabbable(w.x, w.y, ev.pointerType);
       state.hotId = grab ? grab.id : null;
       canvas.classList.toggle('grab', !!grab);
       const over = findNear(w.x, w.y, true);
@@ -197,11 +227,18 @@
     }
   });
 
-  function endDrag() {
+  function endDrag(ev) {
     if (!state.dragging) return;
+    const wasTouch = state.dragging.pointerType === 'touch';
     state.dragging = null;
     canvas.classList.remove('grabbing');
     resim(); // win check happens once the piece is released
+    if (wasTouch) {
+      // Let the label linger a moment, then clear — there is no hover-out on touch.
+      clearTimeout(touchLabelTimer);
+      touchLabelTimer = setTimeout(() => { state.hover = { id: null, since: 0 }; }, 900);
+      state.hotId = null;
+    }
   }
   canvas.addEventListener('pointerup', endDrag);
   canvas.addEventListener('pointercancel', endDrag);
