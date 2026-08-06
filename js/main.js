@@ -14,6 +14,58 @@
     8: 'Some light belongs nowhere. Aim it into the dark.',
   };
 
+  /* Words for the moment of harmony. Nothing was ever wrong — the light
+     simply found its way. Assigned deterministically, distinct across any
+     40 consecutive levels. */
+  const AFFIRMATIONS = [
+    'the light finds its way',
+    'harmony, as it always was',
+    'nothing was ever lost',
+    'all colors come home',
+    'stillness in every beam',
+    'the spiral breathes',
+    'light remembers the way',
+    'every well drinks deeply',
+    'balance was always here',
+    'the spectrum rests',
+    'each ray knows its place',
+    'the dark holds the light gently',
+    'all paths converge in peace',
+    'what was scattered now flows',
+    'the wells are full and quiet',
+    'color meets color, softly',
+    'the beams have settled home',
+    'radiance without effort',
+    'everything in its orbit',
+    'the light was never hurried',
+    'wholeness, quietly arrived',
+    'seven colors, one stillness',
+    'the prism exhales',
+    'gathered, blended, at rest',
+    'the void keeps its distance',
+    'clarity was here all along',
+    'the golden spiral hums',
+    'light bends toward belonging',
+    'no beam travels alone',
+    'the well and the light are one',
+    'patience became radiance',
+    'all hues in gentle accord',
+    'the board breathes out',
+    'brightness finds its level',
+    'what flows apart flows together',
+    'the colors were never apart',
+    'quiet fills the spectrum',
+    'every angle at ease',
+    'the light rests where it belongs',
+    'stillness, luminous and whole',
+  ];
+
+  function affirmationFor(level) {
+    // Coprime stride walks the whole pool: any 40 consecutive levels differ.
+    const base = NS.hashString(state.gameSeed) % AFFIRMATIONS.length;
+    return AFFIRMATIONS[(base + (level - 1) * 17) % AFFIRMATIONS.length];
+  }
+
   const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX'];
   function roman(n) {
     if (n <= 20) return ROMAN[n - 1];
@@ -126,8 +178,9 @@
 
   function onWin() {
     state.winAt = performance.now();
+    hud.winBanner.querySelector('span').textContent = affirmationFor(state.level.level);
     hud.winBanner.classList.add('visible');
-    setTimeout(() => loadLevel(state.level.level + 1), 1800);
+    setTimeout(() => loadLevel(state.level.level + 1), 2600);
   }
 
   /* ---------- input: drag to rotate ---------- */
@@ -307,6 +360,8 @@
     }
     requestAnimationFrame(frame);
   }
+
+  NS.affirmationFor = affirmationFor;
 
   resize();
   const saved = parseInt(localStorage.getItem('lw_level') || '1', 10);
