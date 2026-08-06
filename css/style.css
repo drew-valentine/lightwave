@@ -68,7 +68,7 @@ button { touch-action: manipulation; }
 }
 
 .level-badge {
-  text-align: right;
+  text-align: center;
   pointer-events: auto;
   background: transparent;
   border: none;
@@ -87,6 +87,7 @@ button { touch-action: manipulation; }
   display: block;
   font-size: 10px;
   letter-spacing: 0.3em;
+  margin-right: -0.3em; /* balance the trailing letter-space so centering is true */
   text-transform: uppercase;
   color: var(--text-dim);
 }
