@@ -297,6 +297,26 @@
     ctx.restore();
   }
 
+  /* Subtle color-name caption under a hovered emitter or well. */
+  function drawLabel(ctx, n, view, alpha) {
+    if (alpha <= 0) return;
+    if (n.type !== 'emitter' && n.type !== 'goal') return;
+    const name = C.NAMES[n.color];
+    if (!name) return;
+    const p = view.toScreen(n.x, n.y);
+    const r = E.HIT_RADIUS[n.type] * view.scale;
+
+    ctx.save();
+    ctx.font = '600 10px "Avenir Next", "Futura", system-ui, sans-serif';
+    ctx.letterSpacing = '3px';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    // +1.5 offsets the trailing letter-space so the word sits centered.
+    ctx.fillStyle = withAlpha(C.HEX[n.color] || '#ffffff', 0.9 * alpha);
+    ctx.fillText(name.toUpperCase(), p.x + 1.5, p.y + r + 9);
+    ctx.restore();
+  }
+
   function drawComponents(ctx, level, view, t, hotId, reducedMotion) {
     for (const n of level.comps) {
       const hot = n.id === hotId;
@@ -307,5 +327,5 @@
     }
   }
 
-  NS.RENDER = { drawBackground, drawSpiral, drawBeams, drawComponents, withAlpha };
+  NS.RENDER = { drawBackground, drawSpiral, drawBeams, drawComponents, drawLabel, withAlpha };
 })(globalThis.LW = globalThis.LW || {});

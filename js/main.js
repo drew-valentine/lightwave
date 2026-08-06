@@ -28,6 +28,7 @@
     hotId: null,
     winAt: 0,           // timestamp when win detected, 0 = not won
     startedAt: 0,
+    hover: { id: null, since: 0 }, // component under the pointer, for color labels
     reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   };
 
@@ -123,15 +124,17 @@
   const GRAB_RADIUS = 52;
   const SNAP = 0.055; // radians (~3°) of aim assist
 
-  function findGrabbable(wx, wy) {
+  function findNear(wx, wy, includeGoals) {
     let best = null, bestD = Infinity;
     for (const n of state.level.comps) {
-      if (n.type === 'goal') continue;
+      if (!includeGoals && n.type === 'goal') continue;
       const d = Math.hypot(n.x - wx, n.y - wy);
       if (d < GRAB_RADIUS && d < bestD) { best = n; bestD = d; }
     }
     return best;
   }
+
+  function findGrabbable(wx, wy) { return findNear(wx, wy, false); }
 
   /* Aim assist: snap the raw angle toward directions that point a beam
      (or a prism port) at another component's center. */
@@ -159,6 +162,7 @@
     if (!node) return;
     state.dragging = { node };
     state.hotId = node.id;
+    if (state.hover.id !== node.id) state.hover = { id: node.id, since: performance.now() };
     canvas.setPointerCapture(ev.pointerId);
     canvas.classList.add('grabbing');
   });
@@ -173,9 +177,13 @@
       state.dragging.snapped = snap.snapped;
       resim();
     } else {
-      const over = findGrabbable(w.x, w.y);
-      state.hotId = over ? over.id : null;
-      canvas.classList.toggle('grab', !!over);
+      const grab = findGrabbable(w.x, w.y);
+      state.hotId = grab ? grab.id : null;
+      canvas.classList.toggle('grab', !!grab);
+      const over = findNear(w.x, w.y, true);
+      if ((over && over.id) !== state.hover.id) {
+        state.hover = { id: over ? over.id : null, since: performance.now() };
+      }
     }
   });
 
@@ -201,6 +209,13 @@
     NS.RENDER.drawSpiral(ctx, state.level, view, t);
     NS.RENDER.drawBeams(ctx, state.beams, view, t, state.reducedMotion);
     NS.RENDER.drawComponents(ctx, state.level, view, t, state.hotId, state.reducedMotion);
+    if (state.hover.id !== null) {
+      const n = state.level.comps.find((c) => c.id === state.hover.id);
+      if (n) {
+        const alpha = Math.min(1, (t - state.hover.since) / 220);
+        NS.RENDER.drawLabel(ctx, n, view, alpha);
+      }
+    }
     requestAnimationFrame(frame);
   }
 
