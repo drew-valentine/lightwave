@@ -368,15 +368,20 @@
 
   /* ---------- scramble ---------- */
 
+  /* Every rotatable piece starts facing radially out from the board's
+     center — a calm starburst instead of a tangle. The unsolved guarantee
+     still comes from simulation: in the rare case the radial pose solves
+     the level, jitter until it doesn't. */
   function scramble(comps, rng) {
     const rotatable = comps.filter((n) => n.type !== 'goal');
-    for (let attempt = 0; attempt < 30; attempt++) {
+    for (const n of rotatable) n.angle = Math.atan2(n.y, n.x);
+    E.simulate(comps);
+    if (!E.isSolved(comps)) return true;
+
+    for (let attempt = 1; attempt <= 30; attempt++) {
+      const spread = 0.25 * attempt;
       for (const n of rotatable) {
-        let a;
-        do {
-          a = rng.range(-Math.PI, Math.PI);
-        } while (Math.abs(wrapAngle(a - n.solution)) < 0.45);
-        n.angle = a;
+        n.angle = Math.atan2(n.y, n.x) + rng.range(-spread, spread);
       }
       E.simulate(comps);
       if (!E.isSolved(comps)) return true;
