@@ -1,0 +1,41 @@
+# Push-triggered Pages builds have been failing server-side for this repo
+# (generic "Page build failed"), while API-requested builds succeed.
+# This workflow requests a build via the API after each push, with retries.
+name: Request Pages build
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  pages: write
+
+concurrency:
+  group: pages-build-request
+  cancel-in-progress: false
+
+jobs:
+  request:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request and verify Pages build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          sleep 20
+          for attempt in 1 2 3; do
+            echo "attempt $attempt: requesting build"
+            gh api -X POST "repos/$REPO/pages/builds" >/dev/null || true
+            for i in $(seq 1 40); do
+              sleep 15
+              status=$(gh api "repos/$REPO/pages/builds/latest" --jq .status)
+              commit=$(gh api "repos/$REPO/pages/builds/latest" --jq .commit)
+              if [ "$status" = "built" ] && [ "$commit" = "$SHA" ]; then
+                echo "built $commit"; exit 0
+              fi
+              [ "$status" = "errored" ] && { echo "errored, will retry"; break; }
+            done
+          done
+          echo "giving up after 3 attempts"; exit 1
