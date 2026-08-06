@@ -6,6 +6,10 @@
   const C = NS.COLOR;
   const E = NS.ENGINE;
 
+  function lw(px, view) {
+    return Math.max(1.25, px * view.scale);
+  }
+
   function withAlpha(hex, a) {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
@@ -29,7 +33,7 @@
 
     ctx.save();
     ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(120,140,220,0.055)';
+    ctx.strokeStyle = 'rgba(120,140,220,0.10)';
     ctx.beginPath();
     // Smooth spiral through continuous parameter, not just socket points.
     const maxIdx = sockets[sockets.length - 1].index;
@@ -43,10 +47,10 @@
 
     for (const s of sockets) {
       const p = view.toScreen(s.x, s.y);
-      const tw = 0.10 + 0.05 * Math.sin(t * 0.0006 + s.index * 1.7);
+      const tw = 0.20 + 0.08 * Math.sin(t * 0.0006 + s.index * 1.7);
       ctx.fillStyle = `rgba(140,160,235,${tw})`;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 1.6 * view.scale * 2.2, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, Math.max(1.5, 3.5 * view.scale), 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
@@ -105,14 +109,14 @@
     ctx.rotate(n.angle);
 
     // Housing.
-    ctx.strokeStyle = hot ? 'rgba(220,230,255,0.85)' : 'rgba(150,165,215,0.5)';
-    ctx.lineWidth = 1.4 * view.scale;
+    ctx.strokeStyle = hot ? 'rgba(230,238,255,0.95)' : 'rgba(176,190,235,0.8)';
+    ctx.lineWidth = lw(1.6, view);
     ctx.beginPath();
     ctx.arc(0, 0, r * 0.72, 0, Math.PI * 2);
     ctx.stroke();
 
     // Nozzle wedge pointing along the beam.
-    ctx.fillStyle = hot ? 'rgba(220,230,255,0.9)' : 'rgba(150,165,215,0.65)';
+    ctx.fillStyle = hot ? 'rgba(230,238,255,0.95)' : 'rgba(176,190,235,0.85)';
     ctx.beginPath();
     ctx.moveTo(r * 1.05, 0);
     ctx.lineTo(r * 0.45, -r * 0.34);
@@ -143,8 +147,8 @@
     ctx.translate(p.x, p.y);
     ctx.rotate(n.angle);
 
-    ctx.strokeStyle = hot ? 'rgba(220,230,255,0.85)' : 'rgba(150,165,215,0.55)';
-    ctx.lineWidth = 1.4 * view.scale;
+    ctx.strokeStyle = hot ? 'rgba(230,238,255,0.95)' : 'rgba(176,190,235,0.8)';
+    ctx.lineWidth = lw(1.6, view);
     ctx.beginPath();
     ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2);
     ctx.stroke();
@@ -153,7 +157,7 @@
     ctx.stroke();
 
     // Output nozzle.
-    ctx.fillStyle = hot ? 'rgba(220,230,255,0.9)' : 'rgba(150,165,215,0.7)';
+    ctx.fillStyle = hot ? 'rgba(230,238,255,0.95)' : 'rgba(176,190,235,0.85)';
     ctx.beginPath();
     ctx.moveTo(r * 1.18, 0);
     ctx.lineTo(r * 0.72, -r * 0.28);
@@ -188,7 +192,7 @@
       const a = n.angle + n.offsets[prim];
       const active = (n.input & prim) !== 0;
       ctx.strokeStyle = withAlpha(C.HEX[prim], active ? 0.95 : 0.45);
-      ctx.lineWidth = 2 * view.scale;
+      ctx.lineWidth = lw(2.4, view);
       ctx.beginPath();
       ctx.moveTo(Math.cos(a) * r * 0.72, Math.sin(a) * r * 0.72);
       ctx.lineTo(Math.cos(a) * r * 1.05, Math.sin(a) * r * 1.05);
@@ -196,8 +200,8 @@
     }
 
     ctx.rotate(n.angle);
-    ctx.strokeStyle = hot ? 'rgba(220,230,255,0.9)' : 'rgba(160,175,225,0.6)';
-    ctx.lineWidth = 1.5 * view.scale;
+    ctx.strokeStyle = hot ? 'rgba(230,238,255,0.95)' : 'rgba(186,198,240,0.85)';
+    ctx.lineWidth = lw(1.8, view);
     // Equilateral triangle, apex along the mean output direction.
     ctx.beginPath();
     for (let i = 0; i < 3; i++) {
@@ -209,7 +213,7 @@
     ctx.closePath();
     ctx.stroke();
     // Facet line.
-    ctx.strokeStyle = 'rgba(160,175,225,0.25)';
+    ctx.strokeStyle = 'rgba(186,198,240,0.4)';
     ctx.beginPath();
     ctx.moveTo(-r * 0.35, 0);
     ctx.lineTo(r * 0.7, 0);
@@ -236,6 +240,15 @@
     ctx.save();
     ctx.translate(p.x, p.y);
 
+    // Faint colored halo so every well is visible from across the board.
+    const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 1.5);
+    halo.addColorStop(0, withAlpha(hex, 0.16));
+    halo.addColorStop(1, withAlpha(hex, 0));
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
     if (state === 'satisfied') {
       const pulse = reducedMotion ? 1 : 1 + 0.06 * Math.sin(t * 0.004);
       ctx.globalCompositeOperation = 'lighter';
@@ -255,28 +268,28 @@
       ctx.strokeStyle = withAlpha(hex, 0.95);
     } else if (state === 'overloaded') {
       ctx.strokeStyle = 'rgba(255,107,107,0.75)';
-      ctx.lineWidth = 1.2 * view.scale;
+      ctx.lineWidth = lw(1.4, view);
       ctx.beginPath();
       ctx.arc(0, 0, r * 0.95, 0, Math.PI * 2);
       ctx.stroke();
       ctx.strokeStyle = withAlpha(hex, 0.6);
     } else {
-      ctx.strokeStyle = withAlpha(hex, state === 'partial' ? 0.85 : 0.55);
+      ctx.strokeStyle = withAlpha(hex, state === 'partial' ? 0.95 : 0.8);
     }
 
     // The well: concentric rings in the color it thirsts for.
-    ctx.lineWidth = 1.6 * view.scale;
+    ctx.lineWidth = lw(1.8, view);
     ctx.beginPath();
     ctx.arc(0, 0, r * 0.78, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.lineWidth = 1 * view.scale;
+    ctx.lineWidth = lw(1.2, view);
     ctx.beginPath();
     ctx.arc(0, 0, r * 0.52, 0, Math.PI * 2);
     ctx.stroke();
 
     if (state !== 'satisfied') {
       // Hollow center awaiting its color.
-      ctx.fillStyle = withAlpha(hex, state === 'dark' ? 0.22 : 0.4);
+      ctx.fillStyle = withAlpha(hex, state === 'dark' ? 0.4 : 0.6);
       ctx.beginPath();
       ctx.arc(0, 0, r * 0.14, 0, Math.PI * 2);
       ctx.fill();
