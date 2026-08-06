@@ -2,7 +2,7 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.7.1` (last merge: `feature/meditative-win-sequence`)
+**Active branch:** none — `main` @ `v0.8.0` (last merge: `feature/dissolve-win`)
 **Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll), with builds **requested via the Pages API** by `.github/workflows/request-pages-build.yml` on every push to `main`. Push-triggered builds fail server-side for this repo; API-requested builds succeed. The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-4.
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
 **Last updated:** 2026-08-06
@@ -120,9 +120,32 @@ _(empty)_
 
   **Operational note (replaces OPS-1/OPS-2/OPS-3 guidance):** if the live site looks stale, **check the "Request Pages build" workflow run in the Actions tab first.** If that run is green, the build was requested and accepted; confirm the published commit with `gh api repos/drew-valentine/lightwave/pages/builds/latest`. If the run failed after its retries, re-run it or request a build manually. Ignore any standalone push-triggered `Page build failed` notifications — those are the known-broken trigger path, not a real deploy failure.
 
+### v0.8.0 — Dissolve win sequence
+
+- [x] **UX-7 — Win sequence rebuilt: the level dissolves into light and the next numeral arrives** | Priority: P1 | M | Requested: 2026-08-06 (player) | Completed: 2026-08-06 | Owner: @claude | Branch: `feature/dissolve-win` → `main` @ `v0.8.0`
+  *Supersedes UX-5 (v0.7.0) and UX-6 (v0.7.1).* The player rejected the meditative affirmation text outright — the words were the wrong register for the moment, and no amount of pacing fixed that. **The affirmation phrase pool is removed entirely.** The win is now carried by motion and light alone, and it is roughly half as long.
+
+  **The sequence:**
+  - On solve, the goal wells **flare instantly** — the payoff lands on the same frame as the solve, not after a beat.
+  - The level **dissolves into glowing particles** that spiral home to the board centre along golden curls, while the board itself fades beneath them.
+  - Where the light converges, the **next level's numeral arrives in large Didot** — the reward is the road ahead, not a compliment.
+
+  **Details:**
+  - Auto-advance at **2.7s** (was 5.6s in v0.7.1) — the moment reads as an arrival, not a pause.
+  - **Tap anywhere to skip** for players moving quickly.
+  - `prefers-reduced-motion` gets a fast plain path with no particles or spiral.
+
+  **Verified end-to-end:**
+  - Playwright **real-solve E2E** (an actual solve, not a simulated win state) — **5 checks passing**: next-numeral prep, dissolve pixels rendering, numeral presence, auto-advance timing, tap-to-skip. **Zero console errors.**
+  - Solvability harness still green.
+
+  **Deploy:** merged to `main` and tagged `v0.8.0`; **deploy pending** — the Pages backend is still degraded and the `request-pages-build` watcher is auto-rekicking until a build lands. See OPS-4.
+
 ### v0.7.1 — Meditative win sequence
 
 - [x] **UX-6 — Win sequence: board dims to near-dark before the affirmation surfaces** | Priority: P1 | S | Requested: 2026-08-06 (player) | Completed: 2026-08-06 | Owner: @claude | Branch: `feature/meditative-win-sequence` → `main` @ `v0.7.1`
+  **⚠ Superseded by UX-7 (v0.8.0).** The player rejected the affirmation text this sequence was built to frame, so the whole phrase pool was removed. **This version never reached production** — the Pages outage meant v0.7.1 was never published, so v0.8.0 supersedes it in place: the first win sequence players will actually see is the dissolve.
+
   The v0.7.0 affirmations were the right words at the wrong moment — they appeared abruptly over a full-brightness solved board, which read as an interruption rather than an arrival. The win now unfolds as a paced sequence: the light settles, the world dims, and only then does the phrase surface.
 
   **The timeline (all CSS-driven staggering):**
@@ -145,6 +168,8 @@ _(empty)_
 ### v0.7.0 — Meditative win affirmations
 
 - [x] **UX-5 — Win banner speaks arrival, not repair: 40 meditative affirmations** | Priority: P1 | S | Requested: 2026-08-06 (player) | Completed: 2026-08-06 | Owner: @claude | Branch: `feature/win-affirmations` → `main` @ `v0.7.0`
+  **⚠ Superseded by UX-7 (v0.8.0).** The player rejected the affirmation text; the 40-phrase pool is removed entirely as of v0.8.0, and the win moment is now carried by the dissolve animation and the next level's numeral instead of words.
+
   The level-complete banner said "RESOLVED" — the language of something having been wrong and then fixed. Lightwave is a calm game about light finding its path, so the win moment now names arrival instead of repair. Each level greets you with its own meditative phrase: *the light finds its way*, *harmony, as it always was*, and 38 more.
 
   **Details:**
@@ -332,4 +357,5 @@ _None currently._
 - **v0.6.1** — 2026-08-06 — BUG-2: win banner "RESOLVED" no longer wraps on narrow screens — CSS `letter-spacing` tracking replaces literal inter-letter spaces, plus `white-space: nowrap` and `clamp(18px, 6vw, 55px)` viewport-scaled sizing; verified single-line at 320px/375px/desktop. From `fix/win-banner-wrap`. Shipped alongside OPS-2, which moved Pages deployment off the silently-failing legacy Jekyll builder onto the `.github/workflows/pages.yml` GitHub Actions workflow — since superseded by OPS-3.
 - **v0.6.2** — 2026-08-06 — BUG-3: mobile "grainy graphics" fixed — beam layer widths are now floored in screen pixels, so sub-pixel strokes (core 0.6px, dashes 0.88px at the ~0.34 mobile board scale) can no longer antialias unevenly under additive blending. DPR handling verified correct and ruled out. From `fix/mobile-grain`. Shipped alongside OPS-3, which ended the Pages outage: the corrupted site record was deleted and recreated in legacy branch mode (`main` @ `/`, `.nojekyll`), with the Actions workflow demoted to a `workflow_dispatch`-only manual fallback.
 - **v0.7.0** — 2026-08-06 — UX-5: meditative win affirmations replace "RESOLVED" — a 40-phrase pool of arrival ("the light finds its way", "harmony, as it always was", …), one per level, assigned deterministically via a stride coprime to 40 so any 40 consecutive levels are distinct; soft lowercase italic Didot; win-to-next-level delay extended to 2.6s for reading time. Verified fitting at 320px/375px/desktop with zero console errors. From `feature/win-affirmations`. Confirmed live in production via OPS-4, which fixed the deploy trigger: push-triggered Pages builds fail server-side for this repo, so `.github/workflows/request-pages-build.yml` now requests each build through the Pages API on every push to `main` (with polling + 3 retries).
-- **v0.7.1** — 2026-08-06 — UX-6: the win moment is now a paced sequence rather than a sudden banner — a 0.35s beat, then board and HUD fade to near-dark over ~1.7s, then the affirmation surfaces from 1.1s over a 2.6s fade with upward drift, rests fully readable, and the next level blooms in at 5.6s. All staggering is CSS-driven; `prefers-reduced-motion` disables the animations. Verified by actually solving level 1 with a real mouse drag in Playwright and sampling opacities across the timeline — 7 checks passing, zero console errors, solvability harness green. From `feature/meditative-win-sequence`. Deploying via the `request-pages-build` workflow.
+- **v0.7.1** — 2026-08-06 — UX-6: the win moment is now a paced sequence rather than a sudden banner — a 0.35s beat, then board and HUD fade to near-dark over ~1.7s, then the affirmation surfaces from 1.1s over a 2.6s fade with upward drift, rests fully readable, and the next level blooms in at 5.6s. All staggering is CSS-driven; `prefers-reduced-motion` disables the animations. Verified by actually solving level 1 with a real mouse drag in Playwright and sampling opacities across the timeline — 7 checks passing, zero console errors, solvability harness green. From `feature/meditative-win-sequence`. **Never reached production** — the Pages outage blocked publication, and v0.8.0 supersedes it in place.
+- **v0.8.0** — 2026-08-06 — UX-7: the affirmation text is gone. The player rejected the phrasing, so the **40-phrase pool is removed entirely** and the win is carried by motion: on solve the wells flare instantly, the level dissolves into glowing particles spiralling home to the board centre along golden curls as the board fades beneath, and the **next level's numeral arrives in large Didot** where the light converges. Auto-advance cut to **2.7s** (from 5.6s), tap-anywhere to skip, and `prefers-reduced-motion` gets a fast plain path. Verified with a Playwright real-solve E2E — 5 checks (numeral prep, dissolve pixels, numeral presence, auto-advance, tap-skip), zero console errors, solvability harness green. From `feature/dissolve-win`. **Deploy pending:** Pages backend still degraded; the `request-pages-build` watcher is auto-rekicking until a build lands.
