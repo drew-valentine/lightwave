@@ -67,24 +67,28 @@
       const hex = C.HEX[b.color] || '#ffffff';
       const core = C.CORE_HEX[b.color] || '#ffffff';
 
+      // Widths floored in screen px: sub-pixel additive strokes alias into
+      // shimmering grain on small boards (mobile view scales ~0.3).
       ctx.strokeStyle = withAlpha(hex, 0.07);
-      ctx.lineWidth = 16 * view.scale;
+      ctx.lineWidth = Math.max(7, 16 * view.scale);
       line(ctx, p1, p2);
 
       ctx.strokeStyle = withAlpha(hex, 0.22);
-      ctx.lineWidth = 6 * view.scale;
+      ctx.lineWidth = Math.max(3, 6 * view.scale);
       line(ctx, p1, p2);
 
       ctx.strokeStyle = withAlpha(core, 0.9);
-      ctx.lineWidth = 1.8 * view.scale;
+      ctx.lineWidth = Math.max(1.5, 1.8 * view.scale);
       line(ctx, p1, p2);
 
       if (!reducedMotion) {
         // Light flowing along the beam.
+        const dash = Math.max(2.5, 3 * view.scale);
+        const gap = Math.max(24, 34 * view.scale);
         ctx.strokeStyle = withAlpha('#ffffff', 0.5);
-        ctx.lineWidth = 2.6 * view.scale;
-        ctx.setLineDash([3 * view.scale, 34 * view.scale]);
-        ctx.lineDashOffset = -(t * 0.09) % (37 * view.scale);
+        ctx.lineWidth = Math.max(1.8, 2.6 * view.scale);
+        ctx.setLineDash([dash, gap]);
+        ctx.lineDashOffset = -(t * 0.09) % (dash + gap);
         line(ctx, p1, p2);
         ctx.setLineDash([]);
       }
