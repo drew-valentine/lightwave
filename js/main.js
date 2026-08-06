@@ -64,6 +64,9 @@
     hint: document.getElementById('hint'),
     legend: document.getElementById('legend'),
     winBanner: document.getElementById('win-banner'),
+    badge: document.getElementById('level-badge'),
+    overlay: document.getElementById('level-overlay'),
+    grid: document.getElementById('level-grid'),
   };
 
   function refreshGoalChips() {
@@ -92,6 +95,12 @@
 
   /* ---------- level flow ---------- */
 
+  function maxLevel() {
+    const m = parseInt(localStorage.getItem('lw_max') || '1', 10);
+    const cur = parseInt(localStorage.getItem('lw_level') || '1', 10);
+    return Math.max(Number.isFinite(m) ? m : 1, Number.isFinite(cur) ? cur : 1, 1);
+  }
+
   function loadLevel(n) {
     state.level = NS.GEN.generate(state.gameSeed, n);
     resize();
@@ -99,6 +108,7 @@
     state.winAt = 0;
     state.startedAt = performance.now();
     localStorage.setItem('lw_level', String(n));
+    localStorage.setItem('lw_max', String(Math.max(n, maxLevel())));
     hud.winBanner.classList.remove('visible');
     document.body.classList.add('level-enter');
     setTimeout(() => document.body.classList.remove('level-enter'), 900);
@@ -198,6 +208,48 @@
 
   document.getElementById('btn-reset').addEventListener('click', () => {
     loadLevel(state.level.level);
+  });
+
+  /* ---------- level selector ---------- */
+
+  function openSelector() {
+    hud.grid.innerHTML = '';
+    const top = maxLevel();
+    for (let n = 1; n <= top; n++) {
+      const cell = document.createElement('button');
+      cell.className = 'level-cell' + (n === state.level.level ? ' current' : '');
+      cell.textContent = roman(n);
+      cell.setAttribute('aria-label', `Level ${n}`);
+      cell.addEventListener('click', () => {
+        closeSelector();
+        if (n !== state.level.level) loadLevel(n);
+      });
+      hud.grid.appendChild(cell);
+    }
+    hud.overlay.hidden = false;
+    requestAnimationFrame(() => hud.overlay.classList.add('open'));
+    const current = hud.grid.querySelector('.current') || hud.grid.firstChild;
+    if (current) current.focus();
+  }
+
+  function closeSelector() {
+    hud.overlay.classList.remove('open');
+    hud.overlay.hidden = true;
+    hud.badge.focus();
+  }
+
+  function selectorOpen() {
+    return !hud.overlay.hidden;
+  }
+
+  hud.badge.addEventListener('click', () => {
+    if (selectorOpen()) closeSelector(); else openSelector();
+  });
+  hud.overlay.addEventListener('click', (ev) => {
+    if (ev.target === hud.overlay) closeSelector();
+  });
+  window.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && selectorOpen()) closeSelector();
   });
 
   /* ---------- main loop ---------- */
