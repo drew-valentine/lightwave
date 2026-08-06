@@ -2,7 +2,7 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.7.0` (last merge: `feature/win-affirmations`)
+**Active branch:** none — `main` @ `v0.7.1` (last merge: `feature/meditative-win-sequence`)
 **Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll), with builds **requested via the Pages API** by `.github/workflows/request-pages-build.yml` on every push to `main`. Push-triggered builds fail server-side for this repo; API-requested builds succeed. The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-4.
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
 **Last updated:** 2026-08-06
@@ -119,6 +119,28 @@ _(empty)_
   3. `.github/workflows/pages.yml` — `workflow_dispatch`-only manual Actions deploy, kept as fallback.
 
   **Operational note (replaces OPS-1/OPS-2/OPS-3 guidance):** if the live site looks stale, **check the "Request Pages build" workflow run in the Actions tab first.** If that run is green, the build was requested and accepted; confirm the published commit with `gh api repos/drew-valentine/lightwave/pages/builds/latest`. If the run failed after its retries, re-run it or request a build manually. Ignore any standalone push-triggered `Page build failed` notifications — those are the known-broken trigger path, not a real deploy failure.
+
+### v0.7.1 — Meditative win sequence
+
+- [x] **UX-6 — Win sequence: board dims to near-dark before the affirmation surfaces** | Priority: P1 | S | Requested: 2026-08-06 (player) | Completed: 2026-08-06 | Owner: @claude | Branch: `feature/meditative-win-sequence` → `main` @ `v0.7.1`
+  The v0.7.0 affirmations were the right words at the wrong moment — they appeared abruptly over a full-brightness solved board, which read as an interruption rather than an arrival. The win now unfolds as a paced sequence: the light settles, the world dims, and only then does the phrase surface.
+
+  **The timeline (all CSS-driven staggering):**
+  - **0s** — level solves; a **0.35s** beat of stillness before anything moves.
+  - **0.35s → ~2.05s** — board and HUD fade to near-dark over **~1.7s**.
+  - **1.1s → 3.7s** — the affirmation slowly surfaces: **2.6s** fade paired with a gentle upward drift.
+  - Phrase then rests fully readable.
+  - **5.6s** — the next level blooms in.
+
+  **Details:**
+  - Timing and staggering live entirely in CSS animations/delays — no JS timing chains to drift out of sync.
+  - `prefers-reduced-motion` disables the animations.
+
+  **Verified end-to-end:**
+  - Level 1 actually solved in Playwright with a real mouse drag — not a simulated win state — then opacities sampled across the whole timeline. **7 checks passing, zero console errors.**
+  - Solvability harness still green.
+
+  *Also chips away at the reduced-motion strand of the Accessibility backlog item.*
 
 ### v0.7.0 — Meditative win affirmations
 
@@ -310,3 +332,4 @@ _None currently._
 - **v0.6.1** — 2026-08-06 — BUG-2: win banner "RESOLVED" no longer wraps on narrow screens — CSS `letter-spacing` tracking replaces literal inter-letter spaces, plus `white-space: nowrap` and `clamp(18px, 6vw, 55px)` viewport-scaled sizing; verified single-line at 320px/375px/desktop. From `fix/win-banner-wrap`. Shipped alongside OPS-2, which moved Pages deployment off the silently-failing legacy Jekyll builder onto the `.github/workflows/pages.yml` GitHub Actions workflow — since superseded by OPS-3.
 - **v0.6.2** — 2026-08-06 — BUG-3: mobile "grainy graphics" fixed — beam layer widths are now floored in screen pixels, so sub-pixel strokes (core 0.6px, dashes 0.88px at the ~0.34 mobile board scale) can no longer antialias unevenly under additive blending. DPR handling verified correct and ruled out. From `fix/mobile-grain`. Shipped alongside OPS-3, which ended the Pages outage: the corrupted site record was deleted and recreated in legacy branch mode (`main` @ `/`, `.nojekyll`), with the Actions workflow demoted to a `workflow_dispatch`-only manual fallback.
 - **v0.7.0** — 2026-08-06 — UX-5: meditative win affirmations replace "RESOLVED" — a 40-phrase pool of arrival ("the light finds its way", "harmony, as it always was", …), one per level, assigned deterministically via a stride coprime to 40 so any 40 consecutive levels are distinct; soft lowercase italic Didot; win-to-next-level delay extended to 2.6s for reading time. Verified fitting at 320px/375px/desktop with zero console errors. From `feature/win-affirmations`. Confirmed live in production via OPS-4, which fixed the deploy trigger: push-triggered Pages builds fail server-side for this repo, so `.github/workflows/request-pages-build.yml` now requests each build through the Pages API on every push to `main` (with polling + 3 retries).
+- **v0.7.1** — 2026-08-06 — UX-6: the win moment is now a paced sequence rather than a sudden banner — a 0.35s beat, then board and HUD fade to near-dark over ~1.7s, then the affirmation surfaces from 1.1s over a 2.6s fade with upward drift, rests fully readable, and the next level blooms in at 5.6s. All staggering is CSS-driven; `prefers-reduced-motion` disables the animations. Verified by actually solving level 1 with a real mouse drag in Playwright and sampling opacities across the timeline — 7 checks passing, zero console errors, solvability harness green. From `feature/meditative-win-sequence`. Deploying via the `request-pages-build` workflow.
