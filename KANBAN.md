@@ -2,10 +2,10 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.5.0` (last merge: `feature/radial-start-orientations`)
+**Active branch:** none — `main` @ `v0.6.0` (last merge: `feature/mobile-polish`)
 **Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, serving `main` at repo root
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
-**Last updated:** 2026-08-05
+**Last updated:** 2026-08-06
 
 ---
 
@@ -42,14 +42,12 @@ _(empty)_
 ## Backlog
 
 - [ ] **Sound design: ambient hum, beam tones per color, completion chime** | Priority: P2 | Created: 2026-08-05 | Owner: unassigned
-- [ ] **Mobile touch polish: tap-to-rotate, larger hit targets, responsive board sizing** | Priority: P1 | Created: 2026-08-05 | Owner: unassigned
-  *Note: v0.1.0 ships basic pointer events only; mobile viewport renders correctly but touch ergonomics are unpolished.*
 - [ ] **Hint system: reveal one correct component placement** | Priority: P2 | Created: 2026-08-05 | Owner: unassigned
   *Note: v0.1.0 HUD shows static per-level hint text only — no solver-driven reveal.*
 - [ ] **Undo: step back one placement/rotation (currently reset-only)** | Priority: P2 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Move counter + par score per level** | Priority: P3 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Accessibility: colorblind-safe mode (shape/pattern encoding alongside hue), keyboard control, reduced-motion** | Priority: P1 | Created: 2026-08-05 | Owner: unassigned
-  *Partially addressed by UX-1 (v0.3.0): hover color labels name the color of any emitter or goal well, so hue is no longer the only channel on hover. Still open: persistent per-color shape/pattern encoding that does not require hovering, keyboard control, and reduced-motion support.*
+  *Partially addressed by UX-1 (v0.3.0) and UX-4 (v0.6.0): color labels name the color of any emitter or goal well — on hover with a mouse, on tap with touch — so hue is no longer the only channel. Still open: persistent per-color shape/pattern encoding that requires no interaction at all, keyboard control, and reduced-motion support.*
 - [ ] **Hand-authored showcase levels for the tutorial arc** | Priority: P3 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Level editor (sandbox mode)** | Priority: P3 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Performance pass: beam propagation + render budget on large boards** | Priority: P2 | Created: 2026-08-05 | Owner: unassigned
@@ -74,6 +72,28 @@ _(empty)_
   - Live site loaded and played via Playwright against the public URL; zero console errors.
 
   **Operational note:** `main` is now production. Any push to `main` auto-deploys to the live site, so merges are user-visible immediately — no separate release step gates them.
+
+### v0.6.0 — Mobile touch polish
+
+- [x] **UX-4 — Mobile touch polish: touch-sized targets, jitter-tolerant drag, tap-to-reveal labels** | Priority: P1 | M | Created: 2026-08-05 | Completed: 2026-08-06 | Owner: @claude | Branch: `feature/mobile-polish` → `main` @ `v0.6.0`
+  The board is now genuinely playable with a thumb. Grab targets, drag behavior, snapping, labels, and chrome sizing all adapt to touch instead of assuming a mouse.
+
+  **Details:**
+  - Touch-sized grab targets with a 44px screen-space floor, so hit areas stay thumb-sized regardless of board scale.
+  - Drag deadzone absorbs finger jitter, so a tap stays a tap and a drag stays a drag.
+  - Wider snap tolerance on touch when releasing a component.
+  - Tap-to-reveal color labels on wells and emitters — the v0.3.0 hover captions had no touch equivalent.
+  - Safe-area insets plus `viewport-fit=cover` and `theme-color` for notched devices.
+  - Coarse-pointer sizing: 44px reset control, 48px level-selector cells.
+  - Compact view margins to give the board more room on small screens.
+  - Safari `setPointerCapture` hardening.
+
+  **Verified:**
+  - Emulated iPhone 13, portrait and landscape, driven with real CDP touch events.
+  - Zero console errors.
+  - Solvability harness still green.
+
+  *Also chips away at the Accessibility backlog item: color names are now reachable without a hover-capable pointer.*
 
 ### v0.5.0 — Radial starting orientations
 
@@ -197,3 +217,4 @@ _None currently._
 - **v0.3.0** — 2026-08-05 — UX-1: hover color labels on emitters and goal wells, addressing color-distinguishability feedback. From `feature/hover-color-labels`.
 - **v0.4.0** — 2026-08-05 — UX-2: level selector dialog behind the level badge — roman-numeral grid of unlocked levels, `lw_max` persistence, Esc/click-outside close, focus management, ARIA dialog semantics. From `feature/level-selector`.
 - **v0.5.0** — 2026-08-05 — UX-3: radial starting orientations for all rotatable pieces (emitters/condensers/prisms), giving each level a calm starburst opening; never-starts-solved guarantee preserved via simulation check + escalating-jitter fallback. From `feature/radial-start-orientations`.
+- **v0.6.0** — 2026-08-06 — UX-4: mobile touch polish — 44px screen-space grab targets, drag deadzone, wider touch snap tolerance, tap-to-reveal color labels, safe-area insets + `viewport-fit=cover` + `theme-color`, coarse-pointer control sizing, compact view margins, Safari `setPointerCapture` hardening. Verified on emulated iPhone 13 in both orientations with real touch events. From `feature/mobile-polish`.
