@@ -17,6 +17,38 @@
     return `rgba(${r},${g},${b},${a})`;
   }
 
+  /* Retina-fine dither: large near-black gradients band visibly on OLED
+     panels (coarse steps that read as grain). ~2% noise at one grain per
+     device pixel breaks the bands into smoothness — invisible as texture. */
+  let grainPattern = null;
+  function ensureGrain(ctx) {
+    if (grainPattern || typeof document === 'undefined') return grainPattern;
+    const tile = document.createElement('canvas');
+    tile.width = 128;
+    tile.height = 128;
+    const g = tile.getContext('2d');
+    const img = g.createImageData(128, 128);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = Math.floor(Math.random() * 256);
+      img.data[i] = v; img.data[i + 1] = v; img.data[i + 2] = v;
+      img.data[i + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    grainPattern = ctx.createPattern(tile, 'repeat');
+    return grainPattern;
+  }
+
+  function drawGrain(ctx, deviceW, deviceH) {
+    const p = ensureGrain(ctx);
+    if (!p) return;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // device pixels — grain stays retina-fine
+    ctx.globalAlpha = 0.02;
+    ctx.fillStyle = p;
+    ctx.fillRect(0, 0, deviceW, deviceH);
+    ctx.restore();
+  }
+
   function drawBackground(ctx, w, h, view) {
     const grad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.75);
     grad.addColorStop(0, '#0b0e1d');
@@ -363,5 +395,5 @@
     }
   }
 
-  NS.RENDER = { drawBackground, drawSpiral, drawBeams, drawComponents, drawLabel, drawWinFx, withAlpha };
+  NS.RENDER = { drawBackground, drawSpiral, drawBeams, drawComponents, drawLabel, drawWinFx, drawGrain, withAlpha };
 })(globalThis.LW = globalThis.LW || {});
