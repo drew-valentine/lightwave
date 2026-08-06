@@ -1,0 +1,178 @@
+/* Lightwave — HUD chrome. Fibonacci spacing (8, 13, 21, 34, 55). */
+
+:root {
+  --void: #070912;
+  --text-dim: #8d97b8;
+  --text: #c9d1e8;
+  --text-bright: #f5f7ff;
+  --hairline: rgba(140, 160, 235, 0.18);
+  --display: "Didot", "Bodoni MT", "Playfair Display", Georgia, serif;
+  --body: "Avenir Next", "Futura", system-ui, sans-serif;
+  --mono: "SF Mono", Menlo, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--void);
+  color: var(--text);
+  font-family: var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+
+#board {
+  position: fixed;
+  inset: 0;
+  display: block;
+  touch-action: none;
+}
+#board.grab { cursor: grab; }
+#board.grabbing { cursor: grabbing; }
+
+.hud {
+  position: fixed;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 21px 34px;
+  pointer-events: none;
+  z-index: 2;
+}
+.hud-top { top: 0; }
+.hud-bottom { bottom: 0; align-items: flex-end; }
+
+.wordmark h1 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 21px;
+  letter-spacing: 0.34em;
+  color: var(--text-bright);
+}
+.wordmark .rule {
+  margin-top: 8px;
+  width: 55px;
+  height: 1px;
+  background: var(--hairline);
+}
+
+.level-badge { text-align: right; }
+.level-badge .eyebrow {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.level-badge .numeral {
+  font-family: var(--display);
+  font-size: 34px;
+  line-height: 1.2;
+  color: var(--text-bright);
+}
+
+.legend {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.legend.visible { opacity: 0.8; }
+
+.center-stack {
+  position: absolute;
+  left: 50%;
+  bottom: 21px;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.chips {
+  display: flex;
+  gap: 13px;
+  justify-content: center;
+  margin-bottom: 13px;
+}
+.chip {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1.5px solid var(--c);
+  background: transparent;
+  opacity: 0.65;
+  transition: all 0.35s ease;
+}
+.chip.satisfied {
+  background: var(--c);
+  opacity: 1;
+  box-shadow: 0 0 13px var(--c);
+}
+.chip.overloaded { border-color: #ff6b6b; opacity: 0.9; }
+.chip.partial { opacity: 0.9; }
+
+.hint {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  min-height: 1.3em;
+}
+
+.btn-reset {
+  pointer-events: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 16px;
+  cursor: pointer;
+  transition: color 0.25s, border-color 0.25s;
+}
+.btn-reset:hover, .btn-reset:focus-visible {
+  color: var(--text-bright);
+  border-color: var(--text-dim);
+  outline: none;
+}
+
+.win-banner {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  z-index: 3;
+}
+.win-banner.visible { opacity: 1; }
+.win-banner span {
+  font-family: var(--display);
+  font-size: clamp(28px, 5vw, 55px);
+  letter-spacing: 0.4em;
+  color: var(--text-bright);
+  text-shadow: 0 0 34px rgba(200, 215, 255, 0.6);
+}
+
+body.level-enter #board { animation: level-in 0.9s ease; }
+@keyframes level-in {
+  from { opacity: 0; filter: blur(8px); }
+  to { opacity: 1; filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.level-enter #board { animation: none; }
+  .chip, .legend, .win-banner, .btn-reset { transition: none; }
+}
+
+@media (max-width: 600px) {
+  .hud { padding: 13px 21px; }
+  .wordmark h1 { font-size: 16px; }
+  .legend { display: none; }
+}
