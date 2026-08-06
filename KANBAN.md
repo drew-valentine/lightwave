@@ -2,8 +2,8 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.6.0` (last merge: `feature/mobile-polish`)
-**Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, serving `main` at repo root
+**Active branch:** none — `main` @ `v0.6.1` (last merge: `fix/win-banner-wrap`)
+**Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the `.github/workflows/pages.yml` GitHub Actions workflow (no Jekyll)
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
 **Last updated:** 2026-08-06
 
@@ -71,7 +71,32 @@ _(empty)_
   **Verified:**
   - Live site loaded and played via Playwright against the public URL; zero console errors.
 
-  **Operational note:** `main` is now production. Any push to `main` auto-deploys to the live site, so merges are user-visible immediately — no separate release step gates them.
+  **Operational note (updated by OPS-2):** `main` is production. Every push to `main` triggers the `.github/workflows/pages.yml` GitHub Actions workflow, which deploys the repo root to Pages — merges are user-visible immediately, with no separate release step gating them. **If the live site looks stale, check the repo's Actions tab first:** a failed or skipped workflow run means production is still serving the previous commit.
+
+- [x] **OPS-2 — Migrate GitHub Pages deploys from the legacy Jekyll builder to GitHub Actions** | Priority: P0 | S | Created: 2026-08-06 | Completed: 2026-08-06 | Owner: @claude
+  The legacy Pages Jekyll builder began failing silently on the `v0.6.0` push — no error surfaced, but the live site kept serving stale pre-`v0.6.0` code. Deployment now runs through an explicit GitHub Actions workflow instead.
+
+  **Details:**
+  - Added `.github/workflows/pages.yml`: uploads the repo root as a Pages artifact and publishes it with `actions/deploy-pages`. No Jekyll in the pipeline, so the static site ships exactly as committed.
+  - The Pages site itself was wedged in the legacy build mode and had to be deleted and recreated against the Actions source.
+
+  **Verified:**
+  - Workflow run green; live site now serves current `main`.
+  - v0.6.0 mobile polish and the v0.6.1 win-banner fix both confirmed live in production.
+  - Zero console errors on the live site.
+
+### v0.6.1 — Win banner wrap fix
+
+- [x] **BUG-2 — Win banner "RESOLVED" wrapped onto two lines on narrow screens** | Priority: P1 | S | Reported: 2026-08-06 (player, iPhone 13 mini) | Completed: 2026-08-06 | Owner: @claude | Branch: `fix/win-banner-wrap` → `main` @ `v0.6.1`
+  The level-complete banner spelled "RESOLVED" with literal spaces between letters for the letterspaced look, so narrow viewports treated each letter as its own breakable word and wrapped the word mid-banner.
+
+  **Fix:**
+  - Letterspacing now comes from CSS `letter-spacing` tracking on the real word, not from literal spaces between characters.
+  - `white-space: nowrap` on the banner text so it can never break.
+  - Viewport-scaled sizing via `clamp(18px, 6vw, 55px)` so the banner shrinks to fit instead of wrapping.
+
+  **Verified:**
+  - Single-line at 320px, 375px, and desktop widths.
 
 ### v0.6.0 — Mobile touch polish
 
@@ -218,3 +243,4 @@ _None currently._
 - **v0.4.0** — 2026-08-05 — UX-2: level selector dialog behind the level badge — roman-numeral grid of unlocked levels, `lw_max` persistence, Esc/click-outside close, focus management, ARIA dialog semantics. From `feature/level-selector`.
 - **v0.5.0** — 2026-08-05 — UX-3: radial starting orientations for all rotatable pieces (emitters/condensers/prisms), giving each level a calm starburst opening; never-starts-solved guarantee preserved via simulation check + escalating-jitter fallback. From `feature/radial-start-orientations`.
 - **v0.6.0** — 2026-08-06 — UX-4: mobile touch polish — 44px screen-space grab targets, drag deadzone, wider touch snap tolerance, tap-to-reveal color labels, safe-area insets + `viewport-fit=cover` + `theme-color`, coarse-pointer control sizing, compact view margins, Safari `setPointerCapture` hardening. Verified on emulated iPhone 13 in both orientations with real touch events. From `feature/mobile-polish`.
+- **v0.6.1** — 2026-08-06 — BUG-2: win banner "RESOLVED" no longer wraps on narrow screens — CSS `letter-spacing` tracking replaces literal inter-letter spaces, plus `white-space: nowrap` and `clamp(18px, 6vw, 55px)` viewport-scaled sizing; verified single-line at 320px/375px/desktop. From `fix/win-banner-wrap`. Shipped alongside OPS-2, which moved Pages deployment off the silently-failing legacy Jekyll builder onto the `.github/workflows/pages.yml` GitHub Actions workflow.
