@@ -2,7 +2,7 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.6.2` (last merge: `fix/mobile-grain`)
+**Active branch:** none — `main` @ `v0.7.0` (last merge: `feature/win-affirmations`)
 **Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll). The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-3.
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
 **Last updated:** 2026-08-06
@@ -99,6 +99,21 @@ _(empty)_
   - Live site serving HTTP 200 with the grain fix, the win-banner fix, and the mobile polish all confirmed in production.
 
   **Operational note (replaces OPS-1/OPS-2 guidance):** `main` is still production, but deploys no longer show up in the Actions tab. If the live site looks stale, check the Pages build directly: `gh api repos/drew-valentine/lightwave/pages/builds/latest`. Builds are running slow — allow several minutes before treating a stale site as a failure.
+
+### v0.7.0 — Meditative win affirmations
+
+- [x] **UX-5 — Win banner speaks arrival, not repair: 40 meditative affirmations** | Priority: P1 | S | Requested: 2026-08-06 (player) | Completed: 2026-08-06 | Owner: @claude | Branch: `feature/win-affirmations` → `main` @ `v0.7.0`
+  The level-complete banner said "RESOLVED" — the language of something having been wrong and then fixed. Lightwave is a calm game about light finding its path, so the win moment now names arrival instead of repair. Each level greets you with its own meditative phrase: *the light finds its way*, *harmony, as it always was*, and 38 more.
+
+  **Details:**
+  - 40-phrase pool, one phrase per level, assigned deterministically — the same level always greets you the same way.
+  - Assignment steps through the pool with a stride coprime to 40, so any 40 consecutive levels draw 40 distinct phrases before any repeat.
+  - Styled as soft lowercase italic Didot, in keeping with the game's typographic system — a quiet exhale rather than an announcement.
+  - Win-to-next-level delay extended to 2.6s so the phrase can actually be read.
+
+  **Verified:**
+  - Phrases fit without wrapping at 320px, 375px, and desktop widths (the v0.6.1 `white-space: nowrap` + `clamp()` sizing carries over).
+  - Zero console errors.
 
 ### v0.6.2 — Mobile grain fix
 
@@ -274,3 +289,4 @@ _None currently._
 - **v0.6.0** — 2026-08-06 — UX-4: mobile touch polish — 44px screen-space grab targets, drag deadzone, wider touch snap tolerance, tap-to-reveal color labels, safe-area insets + `viewport-fit=cover` + `theme-color`, coarse-pointer control sizing, compact view margins, Safari `setPointerCapture` hardening. Verified on emulated iPhone 13 in both orientations with real touch events. From `feature/mobile-polish`.
 - **v0.6.1** — 2026-08-06 — BUG-2: win banner "RESOLVED" no longer wraps on narrow screens — CSS `letter-spacing` tracking replaces literal inter-letter spaces, plus `white-space: nowrap` and `clamp(18px, 6vw, 55px)` viewport-scaled sizing; verified single-line at 320px/375px/desktop. From `fix/win-banner-wrap`. Shipped alongside OPS-2, which moved Pages deployment off the silently-failing legacy Jekyll builder onto the `.github/workflows/pages.yml` GitHub Actions workflow — since superseded by OPS-3.
 - **v0.6.2** — 2026-08-06 — BUG-3: mobile "grainy graphics" fixed — beam layer widths are now floored in screen pixels, so sub-pixel strokes (core 0.6px, dashes 0.88px at the ~0.34 mobile board scale) can no longer antialias unevenly under additive blending. DPR handling verified correct and ruled out. From `fix/mobile-grain`. Shipped alongside OPS-3, which ended the Pages outage: the corrupted site record was deleted and recreated in legacy branch mode (`main` @ `/`, `.nojekyll`), with the Actions workflow demoted to a `workflow_dispatch`-only manual fallback.
+- **v0.7.0** — 2026-08-06 — UX-5: meditative win affirmations replace "RESOLVED" — a 40-phrase pool of arrival ("the light finds its way", "harmony, as it always was", …), one per level, assigned deterministically via a stride coprime to 40 so any 40 consecutive levels are distinct; soft lowercase italic Didot; win-to-next-level delay extended to 2.6s for reading time. Verified fitting at 320px/375px/desktop with zero console errors. From `feature/win-affirmations`. Deploying via the legacy Pages branch builder.
