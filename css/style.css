@@ -244,12 +244,13 @@ button { touch-action: manipulation; }
 .win-banner.visible { opacity: 1; }
 .win-banner span {
   font-family: var(--display);
-  /* Sized so RESOLVED + tracking never wraps, even at 320px wide. */
-  font-size: clamp(18px, 6vw, 55px);
-  letter-spacing: 0.4em;
-  margin-right: -0.4em; /* balance the trailing letter-space */
-  text-transform: uppercase;
-  white-space: nowrap;
+  font-style: italic;
+  font-size: clamp(19px, 4.5vw, 42px);
+  letter-spacing: 0.12em;
+  line-height: 1.6;
+  max-width: 84vw;
+  text-align: center;
+  text-wrap: balance;
   color: var(--text-bright);
   text-shadow: 0 0 34px rgba(200, 215, 255, 0.6);
 }
