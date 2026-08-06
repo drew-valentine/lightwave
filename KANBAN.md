@@ -2,7 +2,7 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.8.1` (last merge: `fix/badge-centering`)
+**Active branch:** none — `main` @ `v0.8.2` (last merge: `fix/oled-gradient-banding`)
 **Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll), with builds **requested via the Pages API** by `.github/workflows/request-pages-build.yml` on every push to `main`. Push-triggered builds fail server-side for this repo; API-requested builds succeed. The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-4.
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
 **Last updated:** 2026-08-06
@@ -149,6 +149,22 @@ _(empty)_
   - Solvability harness still green.
 
   **Deploy: CONFIRMED LIVE in production** — https://drew-valentine.github.io/lightwave/ @ build `d30ee87`. The day's deploy failures were **not** a repo problem: a **GitHub major outage affecting Pages and Actions** (posted on githubstatus.com mid-afternoon, since resolved) was swallowing every build. The `request-pages-build` auto-rekick watcher landed the deploy the moment the outage cleared — no manual intervention needed. See OPS-5.
+
+### v0.8.2 — OLED gradient banding fix (grain, round two)
+
+- [x] **BUG-5 — "Grainy graphics" on iPhone 13 mini, round two: OLED gradient banding** | Priority: P1 | S | Reported: 2026-08-06 (player, iPhone 13 mini) | Completed: 2026-08-06 | Owner: @claude | Branch: `fix/oled-gradient-banding` → `main` @ `v0.8.2`
+  The player still saw grain after v0.6.2. Second round of diagnosis found a **different root cause**: large near-black gradients step visibly on OLED panels — classic gradient banding, not stroke antialiasing. The v0.6.2 sub-pixel stroke-floor fix was correct for what it addressed; it simply was not this.
+
+  **Fix:**
+  - A static **2% retina-fine dither pattern** is drawn over each frame, at **one grain per device pixel**, breaking the banding into smoothness. Fine enough to be invisible as texture, strong enough to dissolve the steps.
+
+  **Verified:**
+  - Playwright: **36 distinct shades** measured in a patch that was formerly flat, **zero console errors**.
+  - **60fps maintained at DPR 3.**
+
+  **Deploy: CONFIRMED LIVE in production** — https://drew-valentine.github.io/lightwave/
+
+  *Open: awaiting player confirmation on-device that the grain is gone.*
 
 ### v0.8.1 — Badge centering fix
 
@@ -376,3 +392,4 @@ _None currently._
 - **v0.7.1** — 2026-08-06 — UX-6: the win moment is now a paced sequence rather than a sudden banner — a 0.35s beat, then board and HUD fade to near-dark over ~1.7s, then the affirmation surfaces from 1.1s over a 2.6s fade with upward drift, rests fully readable, and the next level blooms in at 5.6s. All staggering is CSS-driven; `prefers-reduced-motion` disables the animations. Verified by actually solving level 1 with a real mouse drag in Playwright and sampling opacities across the timeline — 7 checks passing, zero console errors, solvability harness green. From `feature/meditative-win-sequence`. **Never reached production** — the Pages outage blocked publication, and v0.8.0 supersedes it in place.
 - **v0.8.0** — 2026-08-06 — UX-7: the affirmation text is gone. The player rejected the phrasing, so the **40-phrase pool is removed entirely** and the win is carried by motion: on solve the wells flare instantly, the level dissolves into glowing particles spiralling home to the board centre along golden curls as the board fades beneath, and the **next level's numeral arrives in large Didot** where the light converges. Auto-advance cut to **2.7s** (from 5.6s), tap-anywhere to skip, and `prefers-reduced-motion` gets a fast plain path. Verified with a Playwright real-solve E2E — 5 checks (numeral prep, dissolve pixels, numeral presence, auto-advance, tap-skip), zero console errors, solvability harness green. From `feature/dissolve-win`. **CONFIRMED LIVE in production** at build `d30ee87` — the day's stalled deploys were root-caused (OPS-5) to a **GitHub major outage on Pages and Actions**, posted on githubstatus.com mid-afternoon and since resolved; the `request-pages-build` auto-rekick watcher landed the deploy as soon as it cleared.
 - **v0.8.1** — 2026-08-06 — BUG-4: level badge numeral centering fix. From `fix/badge-centering`. **CONFIRMED LIVE in production** in the same `d30ee87` build as v0.8.0.
+- **v0.8.2** — 2026-08-06 — BUG-5: the second round of the iPhone 13 mini "grainy graphics" report. The remaining grain was **OLED gradient banding** — large near-black gradients step visibly on OLED panels — a different cause from the v0.6.2 sub-pixel stroke-floor fix. Fixed with a **static 2% retina-fine dither pattern drawn at one grain per device pixel** over each frame, breaking the banding into smoothness while staying invisible as texture. Verified via Playwright: **36 distinct shades** in a formerly-flat patch, zero console errors, **60fps maintained at DPR 3**. From `fix/oled-gradient-banding`. **CONFIRMED LIVE in production** — awaiting player confirmation on-device.
