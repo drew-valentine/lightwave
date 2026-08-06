@@ -18,8 +18,9 @@
   }
 
   /* Retina-fine dither: large near-black gradients band visibly on OLED
-     panels (coarse steps that read as grain). ~2% noise at one grain per
-     device pixel breaks the bands into smoothness — invisible as texture. */
+     panels (coarse steps that read as grain). A whisper of additive noise
+     — at most ~1.5 luminance levels, one grain per device pixel — breaks
+     single-step bands without ever becoming visible speckle itself. */
   let grainPattern = null;
   function ensureGrain(ctx) {
     if (grainPattern || typeof document === 'undefined') return grainPattern;
@@ -43,7 +44,10 @@
     if (!p) return;
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0); // device pixels — grain stays retina-fine
-    ctx.globalAlpha = 0.02;
+    // Additive-only, capped at ~1.5 levels: 'lighter' never darkens, and
+    // 0.006 alpha over 0..255 noise adds at most ~1.5 to any channel.
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.006;
     ctx.fillStyle = p;
     ctx.fillRect(0, 0, deviceW, deviceH);
     ctx.restore();
