@@ -2,7 +2,7 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.3.0` (last merge: `feature/hover-color-labels`)
+**Active branch:** none — `main` @ `v0.4.0` (last merge: `feature/level-selector`)
 **Last updated:** 2026-08-05
 
 ---
@@ -58,6 +58,21 @@ _(empty)_
 ---
 
 ## Done
+
+### v0.4.0 — Level selector
+
+- [x] **UX-2 — Level selector dialog from the level badge** | Priority: P1 | M | Requested: 2026-08-05 (player) | Completed: 2026-08-05 | Owner: @claude | Branch: `feature/level-selector` → `main` @ `v0.4.0`
+  The top-right level badge is now a button. Pressing it opens a dialog overlay showing a roman-numeral grid of every unlocked level, with the current level highlighted; picking a cell jumps straight to that level.
+
+  **Details:**
+  - Highest level reached is tracked in `localStorage` as `lw_max`, and is preserved when replaying earlier levels — so unlocks never regress.
+  - Dismiss via Esc or click-outside; focus moves into the dialog on open and returns to the badge on close.
+  - ARIA dialog semantics on the overlay.
+
+  **Verified:**
+  - Playwright flow test — 9 checks: open, cell count, current-level highlight, jump, close, max preservation, reopen, escape.
+  - Zero console errors.
+  - Solvability harness still green.
 
 ### v0.3.0 — Hover color labels
 
@@ -149,3 +164,4 @@ _None currently._
 - **v0.1.0** — 2026-08-05 — Core Game epic (CG-1 … CG-13) from `feature/light-puzzle-game`.
 - **v0.2.0** — 2026-08-05 — BUG-1: single-beam wells + machinery-required goal colors, making prisms/condensers provably necessary. From `fix/machinery-required-goals`.
 - **v0.3.0** — 2026-08-05 — UX-1: hover color labels on emitters and goal wells, addressing color-distinguishability feedback. From `feature/hover-color-labels`.
+- **v0.4.0** — 2026-08-05 — UX-2: level selector dialog behind the level badge — roman-numeral grid of unlocked levels, `lw_max` persistence, Esc/click-outside close, focus management, ARIA dialog semantics. From `feature/level-selector`.
