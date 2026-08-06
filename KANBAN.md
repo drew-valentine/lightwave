@@ -3,6 +3,8 @@
 A browser-playable puzzle game about the properties of light.
 
 **Active branch:** none — `main` @ `v0.5.0` (last merge: `feature/radial-start-orientations`)
+**Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, serving `main` at repo root
+**⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
 **Last updated:** 2026-08-05
 
 ---
@@ -51,13 +53,27 @@ _(empty)_
 - [ ] **Hand-authored showcase levels for the tutorial arc** | Priority: P3 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Level editor (sandbox mode)** | Priority: P3 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Performance pass: beam propagation + render budget on large boards** | Priority: P2 | Created: 2026-08-05 | Owner: unassigned
-- [ ] **Deploy: static build + hosting** | Priority: P2 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Scale solvability harness toward the 1000-seed AC** | Priority: P2 | Created: 2026-08-05 | Owner: unassigned
   v0.2.0 ships 10 seeds × 60 levels (600 levels), all passing. Widen seed coverage further and wire it into CI.
 
 ---
 
 ## Done
+
+### OPS — Live deployment
+
+- [x] **OPS-1 — Deploy: static build + hosting** | Priority: P2 | S | Created: 2026-08-05 | Completed: 2026-08-05 | Owner: @claude
+  The game is live: **https://drew-valentine.github.io/lightwave/**
+
+  **Details:**
+  - Hosted on GitHub Pages from the public repo `drew-valentine/lightwave`.
+  - Pages serves the `main` branch at repo root — no build step, the static site *is* the repo.
+  - Legacy branch build retained.
+
+  **Verified:**
+  - Live site loaded and played via Playwright against the public URL; zero console errors.
+
+  **Operational note:** `main` is now production. Any push to `main` auto-deploys to the live site, so merges are user-visible immediately — no separate release step gates them.
 
 ### v0.5.0 — Radial starting orientations
 

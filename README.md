@@ -3,8 +3,10 @@
 A browser puzzle game about the properties of light. Aim beams, blend colors,
 split white into its primaries, and feed every well the one color it thirsts for.
 
-**Play:** open `index.html` in any modern browser (no build step, no dependencies),
-or serve the folder: `python3 -m http.server 8642` → http://localhost:8642
+**Play online:** https://drew-valentine.github.io/lightwave/
+
+Or locally: open `index.html` in any modern browser (no build step, no
+dependencies), or serve the folder: `python3 -m http.server 8642` → http://localhost:8642
 
 ## How it plays
 
