@@ -372,6 +372,7 @@
         NS.RENDER.drawLabel(ctx, n, view, alpha);
       }
     }
+    NS.RENDER.drawGrain(ctx, canvas.width, canvas.height);
     requestAnimationFrame(frame);
   }
 
