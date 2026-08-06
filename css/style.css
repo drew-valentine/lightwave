@@ -59,7 +59,22 @@ html, body {
   background: var(--hairline);
 }
 
-.level-badge { text-align: right; }
+.level-badge {
+  text-align: right;
+  pointer-events: auto;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  margin: -8px;
+  border-radius: 8px;
+  transition: background 0.25s;
+}
+.level-badge:hover, .level-badge:focus-visible {
+  background: rgba(140, 160, 235, 0.08);
+  outline: none;
+}
+.level-badge:focus-visible { box-shadow: 0 0 0 1px var(--hairline); }
 .level-badge .eyebrow {
   display: block;
   font-size: 10px;
@@ -138,6 +153,75 @@ html, body {
   color: var(--text-bright);
   border-color: var(--text-dim);
   outline: none;
+}
+
+.level-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 5, 11, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.level-overlay.open { opacity: 1; }
+.level-overlay[hidden] { display: none; }
+
+.level-panel {
+  text-align: center;
+  max-width: 610px;
+  max-height: 76vh;
+  overflow-y: auto;
+  padding: 34px 55px;
+}
+.level-panel h2 {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 21px;
+  letter-spacing: 0.3em;
+  word-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--text-bright);
+}
+.level-panel .rule {
+  width: 55px;
+  height: 1px;
+  background: var(--hairline);
+  margin: 13px auto 34px;
+}
+
+.level-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 13px;
+  justify-content: center;
+}
+.level-cell {
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  border: 1px solid var(--hairline);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 17px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.level-cell:hover, .level-cell:focus-visible {
+  color: var(--text-bright);
+  border-color: var(--text-dim);
+  box-shadow: 0 0 13px rgba(160, 180, 245, 0.25);
+  outline: none;
+}
+.level-cell.current {
+  color: var(--text-bright);
+  border-color: var(--text);
+  box-shadow: 0 0 13px rgba(200, 215, 255, 0.35);
 }
 
 .win-banner {

@@ -14,11 +14,19 @@
     <h1>L I G H T W A V E</h1>
     <div class="rule"></div>
   </div>
-  <div class="level-badge">
+  <button id="level-badge" class="level-badge" title="Choose a level" aria-haspopup="dialog">
     <span class="eyebrow">Level</span>
     <span id="level-no" class="numeral">I</span>
-  </div>
+  </button>
 </header>
+
+<div id="level-overlay" class="level-overlay" role="dialog" aria-modal="true" aria-label="Choose a level" hidden>
+  <div class="level-panel">
+    <h2>Choose a Level</h2>
+    <div class="rule"></div>
+    <div id="level-grid" class="level-grid"></div>
+  </div>
+</div>
 
 <footer class="hud hud-bottom">
   <div id="legend" class="legend">R+G=Y&ensp;·&ensp;R+B=M&ensp;·&ensp;G+B=C&ensp;·&ensp;R+G+B=W</div>
