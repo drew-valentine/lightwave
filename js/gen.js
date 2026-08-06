@@ -41,105 +41,202 @@
 
   /* ---------- solution graph ---------- */
 
+  /* ---------- machinery-aware color helpers ---------- */
+
+  /* A prism input: superset of `required` with >=2 primaries, steered away
+     from colors in `avoid` so its feeding emitter can't double as a goal key. */
+  function chooseSuperset(required, avoid, rng) {
+    const spares = C.PRIMARIES.filter((p) => !(required & p));
+    const options = [];
+    for (let mask = 0; mask < (1 << spares.length); mask++) {
+      let u = required;
+      spares.forEach((p, i) => { if (mask & (1 << i)) u |= p; });
+      if (C.bitCount(u) >= 2) options.push(u);
+    }
+    const shuffled = rng.shuffle(options);
+    const clean = shuffled.filter((u) => !avoid.has(u));
+    const pool = clean.length ? clean : shuffled;
+    pool.sort((a, b) => C.bitCount(a) - C.bitCount(b));
+    return rng.chance(0.65) ? pool[0] : rng.pick(pool);
+  }
+
+  /* Two disjoint non-empty parts of `color`, preferring parts outside `avoid`. */
+  function chooseSplit(color, avoid, rng) {
+    const prims = C.primariesOf(color);
+    const splits = [];
+    for (let mask = 1; mask < (1 << prims.length) - 1; mask++) {
+      let a = 0, b = 0;
+      prims.forEach((p, i) => { if (mask & (1 << i)) a |= p; else b |= p; });
+      if (a < b) splits.push([a, b]);
+    }
+    const shuffled = rng.shuffle(splits);
+    const clean = shuffled.filter(([a, b]) => !avoid.has(a) && !avoid.has(b));
+    return (clean.length ? clean : shuffled)[0];
+  }
+
+  /* ---------- solution graph ---------- */
+
+  /* Returns the component list, or null when the graph can't honor the
+     machinery guarantee and the caller should retry with fresh randomness.
+
+     Guarantee: every goal fed through a prism/condenser wears a color that
+     no emitter in the level emits (the forbidden set M). Combined with the
+     one-beam-per-well rule this makes the machinery provably required: a
+     condenser can never subtract primaries, so a primary-colored goal in M
+     needs a prism, and a composite color in M can only be blended. */
   function buildGraph(params, rng) {
     const comps = [];
-    const demands = []; // { targetId, color, depth }
-
-    const addGoal = (color) => {
-      const g = node('goal', { color });
-      comps.push(g);
-      demands.push({ targetId: g.id, color, depth: 0 });
-      return g;
-    };
-
-    if (params.template === 'first-light') {
-      addGoal(rng.pick(C.PRIMARIES));
-    } else if (params.template === 'duet') {
-      const pool = rng.shuffle([...C.PRIMARIES, ...C.SECONDARIES]);
-      addGoal(pool[0]); addGoal(pool[1]);
-    } else if (params.template === 'confluence') {
-      // Two primary emitters meet in a condenser feeding a secondary goal.
-      const secondary = rng.pick(C.SECONDARIES);
-      const g = addGoal(secondary);
-      demands.length = 0;
-      const cond = node('condenser', { targetId: g.id });
-      comps.push(cond);
-      for (const p of C.primariesOf(secondary)) {
-        demands.push({ targetId: cond.id, color: p, depth: 2, forceEmitter: true });
-      }
-    } else if (params.template === 'dispersion') {
-      // One white emitter unbraided by a prism into three primary goals.
-      const goals = C.PRIMARIES.map((p) => addGoal(p));
-      demands.length = 0;
-      const prism = node('prism', {
-        ports: goals.map((g) => ({ primary: g.color, targetId: g.id })),
-      });
-      comps.push(prism);
-      demands.push({ targetId: prism.id, color: C.W, depth: 2, forceEmitter: true });
-    } else {
-      const palette = params.allowWhiteGoals
-        ? C.ALL
-        : [...C.PRIMARIES, ...C.SECONDARIES];
-      for (let i = 0; i < params.goals; i++) addGoal(rng.pick(palette));
-    }
-
+    const demands = []; // { targetId, color, depth, goalIds, forceEmitter }
+    const machineryGoals = new Set();
+    const M = new Set(); // machinery goal colors — forbidden for emitters
     const budget = {
       prism: params.prisms || 0,
       condenser: params.condensers || 0,
     };
 
-    while (demands.length) {
-      const d = demands.shift();
-      const deep = d.depth >= (params.maxDepth || 2);
+    const addGoal = (color) => {
+      const g = node('goal', { color });
+      comps.push(g);
+      return g;
+    };
 
-      // Prism route: satisfy up to three distinct primary demands with one prism.
-      if (!d.forceEmitter && !deep && C.bitCount(d.color) === 1 &&
-          budget.prism > 0 && rng.chance(params.pPrism)) {
+    if (params.template === 'first-light') {
+      const g = addGoal(rng.pick(C.PRIMARIES));
+      demands.push({ targetId: g.id, color: g.color, depth: 0, goalIds: [g.id], forceEmitter: true });
+    } else if (params.template === 'duet') {
+      const pool = rng.shuffle([...C.PRIMARIES, ...C.SECONDARIES]);
+      for (const c of pool.slice(0, 2)) {
+        const g = addGoal(c);
+        demands.push({ targetId: g.id, color: c, depth: 0, goalIds: [g.id], forceEmitter: true });
+      }
+    } else if (params.template === 'confluence') {
+      // Two primary emitters meet in a condenser feeding a secondary goal.
+      const secondary = rng.pick(C.SECONDARIES);
+      const g = addGoal(secondary);
+      const cond = node('condenser', { targetId: g.id });
+      comps.push(cond);
+      machineryGoals.add(g.id);
+      M.add(secondary);
+      for (const p of C.primariesOf(secondary)) {
+        demands.push({ targetId: cond.id, color: p, depth: 2, goalIds: [g.id], forceEmitter: true });
+      }
+    } else if (params.template === 'dispersion') {
+      // One white emitter unbraided by a prism into three primary goals.
+      const goals = C.PRIMARIES.map((p) => addGoal(p));
+      const prism = node('prism', {
+        ports: goals.map((g) => ({ primary: g.color, targetId: g.id })),
+      });
+      comps.push(prism);
+      for (const g of goals) { machineryGoals.add(g.id); M.add(g.color); }
+      demands.push({ targetId: prism.id, color: C.W, depth: 2, goalIds: goals.map((g) => g.id), forceEmitter: true });
+    } else {
+      // General level: distinct goal colors, machinery routes decided up
+      // front so the forbidden color set M is known before any emitter or
+      // split color is chosen.
+      const palette = params.allowWhiteGoals
+        ? C.ALL
+        : [...C.PRIMARIES, ...C.SECONDARIES];
+      const colors = rng.shuffle(palette).slice(0, params.goals);
+      const goals = colors.map(addGoal);
+
+      const prismGoals = [], condGoals = [], directGoals = [];
+      for (const g of rng.shuffle(goals)) {
+        const primary = C.bitCount(g.color) === 1;
+        if (primary && prismGoals.length < budget.prism * 3 && rng.chance(params.pPrism)) {
+          prismGoals.push(g);
+        } else if (!primary && condGoals.length < budget.condenser && rng.chance(params.pCondenser)) {
+          condGoals.push(g);
+        } else {
+          directGoals.push(g);
+        }
+      }
+      // A level that budgets machinery must actually use some.
+      if (!prismGoals.length && !condGoals.length) {
+        const pi = directGoals.findIndex((g) => C.bitCount(g.color) === 1);
+        const ci = directGoals.findIndex((g) => C.bitCount(g.color) >= 2);
+        if (pi >= 0 && budget.prism > 0) prismGoals.push(...directGoals.splice(pi, 1));
+        else if (ci >= 0 && budget.condenser > 0) condGoals.push(...directGoals.splice(ci, 1));
+        else return null;
+      }
+      for (const g of [...prismGoals, ...condGoals]) {
+        machineryGoals.add(g.id);
+        M.add(g.color);
+      }
+
+      // Prisms serve up to three primary goals each (colors are distinct).
+      for (let i = 0; i < prismGoals.length; i += 3) {
+        const chunk = prismGoals.slice(i, i + 3);
         budget.prism--;
-        const bundle = [d];
-        for (let i = demands.length - 1; i >= 0 && bundle.length < 3; i--) {
-          const other = demands[i];
-          if (C.bitCount(other.color) === 1 &&
-              !bundle.some((b) => b.color === other.color)) {
-            bundle.push(other);
-            demands.splice(i, 1);
-          }
-        }
-        let inputColor = bundle.reduce((m, b) => m | b.color, 0);
-        // Sometimes add a waste primary the player must aim into the dark.
-        if (C.bitCount(inputColor) < 3 && rng.chance(0.45)) {
-          const spare = C.PRIMARIES.filter((p) => !(inputColor & p));
-          inputColor |= rng.pick(spare);
-        }
+        const inputColor = chooseSuperset(chunk.reduce((m, g) => m | g.color, 0), M, rng);
         const prism = node('prism', {
           ports: C.primariesOf(inputColor).map((p) => {
-            const fed = bundle.find((b) => b.color === p);
-            return { primary: p, targetId: fed ? fed.targetId : null };
+            const fed = chunk.find((g) => g.color === p);
+            return { primary: p, targetId: fed ? fed.id : null };
           }),
         });
         comps.push(prism);
-        demands.push({ targetId: prism.id, color: inputColor, depth: d.depth + 1 });
+        demands.push({ targetId: prism.id, color: inputColor, depth: 1, goalIds: chunk.map((g) => g.id) });
+      }
+      for (const g of condGoals) {
+        budget.condenser--;
+        const cond = node('condenser', { targetId: g.id });
+        comps.push(cond);
+        for (const part of chooseSplit(g.color, M, rng)) {
+          demands.push({ targetId: cond.id, color: part, depth: 1, goalIds: [g.id] });
+        }
+      }
+      for (const g of directGoals) {
+        demands.push({ targetId: g.id, color: g.color, depth: 0, goalIds: [g.id] });
+      }
+    }
+
+    // Resolve the demand chains down to emitters.
+    while (demands.length) {
+      const d = demands.shift();
+      const primary = C.bitCount(d.color) === 1;
+      const deep = d.depth >= (params.maxDepth || 2);
+      // A demand for a forbidden color must go deeper into machinery; other
+      // chain demands occasionally do so for variety.
+      const forced = M.has(d.color) && !d.forceEmitter;
+      const wantMachinery = forced ||
+        (!d.forceEmitter && d.depth >= 1 && !deep && rng.chance(0.25));
+
+      if (wantMachinery && primary && budget.prism > 0) {
+        budget.prism--;
+        const inputColor = chooseSuperset(d.color, M, rng);
+        const prism = node('prism', {
+          ports: C.primariesOf(inputColor).map((p) => (
+            { primary: p, targetId: p === d.color ? d.targetId : null }
+          )),
+        });
+        comps.push(prism);
+        for (const gid of d.goalIds) machineryGoals.add(gid);
+        demands.push({ targetId: prism.id, color: inputColor, depth: d.depth + 1, goalIds: d.goalIds });
         continue;
       }
-
-      // Condenser route: split a composite color into two tributaries.
-      if (!d.forceEmitter && !deep && C.bitCount(d.color) >= 2 &&
-          budget.condenser > 0 && rng.chance(params.pCondenser)) {
+      if (wantMachinery && !primary && budget.condenser > 0) {
         budget.condenser--;
-        const parts = C.splitColor(d.color, rng);
         const cond = node('condenser', { targetId: d.targetId });
         comps.push(cond);
-        for (const part of parts) {
-          demands.push({ targetId: cond.id, color: part, depth: d.depth + 1 });
+        for (const gid of d.goalIds) machineryGoals.add(gid);
+        for (const part of chooseSplit(d.color, M, rng)) {
+          demands.push({ targetId: cond.id, color: part, depth: d.depth + 1, goalIds: d.goalIds });
         }
         continue;
       }
+      if (forced) return null; // needs machinery it can't afford — reroll
 
       comps.push(node('emitter', { color: d.color, targetId: d.targetId }));
     }
 
+    // Safety net — the construction above should already guarantee this.
+    const goalNodes = comps.filter((n) => n.type === 'goal');
+    for (const g of goalNodes) g.viaMachinery = machineryGoals.has(g.id);
+    if (comps.some((n) => n.type === 'emitter' && M.has(n.color))) return null;
+
     for (let i = 0; i < (params.decoys || 0); i++) {
-      comps.push(node('emitter', { color: rng.pick(C.ALL), targetId: null, decoy: true }));
+      const palette = C.ALL.filter((c) => !M.has(c));
+      comps.push(node('emitter', { color: rng.pick(palette), targetId: null, decoy: true }));
     }
 
     return comps;
@@ -290,11 +387,12 @@
   /* ---------- top level ---------- */
 
   function generate(gameSeed, levelNumber) {
-    for (let graphTry = 0; graphTry < 12; graphTry++) {
+    for (let graphTry = 0; graphTry < 30; graphTry++) {
       const rng = NS.makeRng(`${gameSeed}:${levelNumber}:${graphTry}`);
       nextId = 1;
       const params = levelParams(levelNumber, rng);
       const comps = buildGraph(params, rng);
+      if (!comps) continue; // machinery guarantee violated — reroll the graph
 
       for (let embedTry = 0; embedTry < 140; embedTry++) {
         const layout = embed(comps, rng, embedTry % 2 ? 'woven' : 'tiered');

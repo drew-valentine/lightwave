@@ -17,10 +17,12 @@ the dark — the absence of light.
 | **Emitter** | Emits one directional beam of a fixed color. Drag to aim. |
 | **Condenser** | Blends every beam it drinks into one combined beam. Drag to aim its output. |
 | **Prism** | Unbraids an incoming beam into its primary components, fanned across its ports. Drag to rotate the fan. |
-| **Well (goal)** | Thirsts for exactly one color. Feed it precisely that — no more, no less. |
+| **Well (goal)** | Thirsts for exactly one color, carried on a **single beam**. Feed it precisely that — no more, no less. |
 
 Satisfy every well to resolve the level. Beams are intercepted by the first
-piece in their path, so routing matters as much as color.
+piece in their path, so routing matters as much as color. Wells refuse
+crowds: two beams into one well overload it even if their colors blend
+correctly — blending is the condenser's job.
 
 ## Levels
 
@@ -29,6 +31,11 @@ backwards from its goals into a solution graph, embedded on a golden-angle
 phyllotaxis spiral, verified end-to-end by the actual beam engine in its
 solution state, then scrambled — and the scramble is verified *unsolved*.
 Generation is seeded and deterministic; every level is distinct.
+
+Machinery is never decorative: any well fed through a prism or condenser in
+the solution gets a color that no emitter in the level emits. Since a well
+accepts only a single beam, and a condenser can never *remove* primaries,
+such wells provably cannot be satisfied without the machinery.
 
 The first levels introduce the pieces one at a time; difficulty then grows on a
 Fibonacci-paced schedule (more wells, prisms, condensers, and eventually decoy
