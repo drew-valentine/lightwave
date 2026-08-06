@@ -16,17 +16,23 @@
 html, body {
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: none;
   background: var(--void);
   color: var(--text);
   font-family: var(--body);
   -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
 }
+
+button { touch-action: manipulation; }
 
 #board {
   position: fixed;
   inset: 0;
   display: block;
   touch-action: none;
+  -webkit-touch-callout: none;
 }
 #board.grab { cursor: grab; }
 #board.grabbing { cursor: grabbing; }
@@ -255,8 +261,37 @@ body.level-enter #board { animation: level-in 0.9s ease; }
   .chip, .legend, .win-banner, .btn-reset { transition: none; }
 }
 
+/* Notch / home-indicator safe areas. */
+.hud-top {
+  padding-top: max(21px, env(safe-area-inset-top));
+  padding-left: max(34px, env(safe-area-inset-left));
+  padding-right: max(34px, env(safe-area-inset-right));
+}
+.hud-bottom {
+  padding-bottom: max(21px, env(safe-area-inset-bottom));
+  padding-left: max(34px, env(safe-area-inset-left));
+  padding-right: max(34px, env(safe-area-inset-right));
+}
+.center-stack { bottom: max(21px, env(safe-area-inset-bottom)); }
+
+/* Fingers need bigger targets than cursors. */
+@media (pointer: coarse) {
+  .btn-reset { width: 44px; height: 44px; font-size: 19px; }
+  .level-cell { width: 48px; height: 48px; }
+  .chips { gap: 11px; }
+  .chip { width: 15px; height: 15px; }
+}
+
 @media (max-width: 600px) {
-  .hud { padding: 13px 21px; }
+  .hud { padding-left: max(21px, env(safe-area-inset-left)); padding-right: max(21px, env(safe-area-inset-right)); }
+  .hud-top { padding-top: max(13px, env(safe-area-inset-top)); }
+  .hud-bottom { padding-bottom: max(13px, env(safe-area-inset-bottom)); }
+  .center-stack { bottom: max(13px, env(safe-area-inset-bottom)); }
   .wordmark h1 { font-size: 16px; }
+  .level-badge .numeral { font-size: 28px; }
   .legend { display: none; }
+  .hint { font-size: 12px; }
+  .level-panel { padding: 21px 13px; max-height: 82vh; }
+  .level-panel h2 { font-size: 17px; }
+  .level-grid { gap: 10px; }
 }
