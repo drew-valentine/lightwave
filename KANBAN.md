@@ -2,8 +2,8 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.6.1` (last merge: `fix/win-banner-wrap`)
-**Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the `.github/workflows/pages.yml` GitHub Actions workflow (no Jekyll)
+**Active branch:** none — `main` @ `v0.6.2` (last merge: `fix/mobile-grain`)
+**Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll). The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-3.
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
 **Last updated:** 2026-08-06
 
@@ -74,6 +74,8 @@ _(empty)_
   **Operational note (updated by OPS-2):** `main` is production. Every push to `main` triggers the `.github/workflows/pages.yml` GitHub Actions workflow, which deploys the repo root to Pages — merges are user-visible immediately, with no separate release step gating them. **If the live site looks stale, check the repo's Actions tab first:** a failed or skipped workflow run means production is still serving the previous commit.
 
 - [x] **OPS-2 — Migrate GitHub Pages deploys from the legacy Jekyll builder to GitHub Actions** | Priority: P0 | S | Created: 2026-08-06 | Completed: 2026-08-06 | Owner: @claude
+  **⚠ Superseded by OPS-3.** The Actions migration below did not hold: the Pages site record itself was corrupted, and deploys through the Actions source kept going inactive. Final state is the legacy branch builder with `.nojekyll`. Retained here as the history of how the outage was diagnosed.
+
   The legacy Pages Jekyll builder began failing silently on the `v0.6.0` push — no error surfaced, but the live site kept serving stale pre-`v0.6.0` code. Deployment now runs through an explicit GitHub Actions workflow instead.
 
   **Details:**
@@ -84,6 +86,33 @@ _(empty)_
   - Workflow run green; live site now serves current `main`.
   - v0.6.0 mobile polish and the v0.6.1 win-banner fix both confirmed live in production.
   - Zero console errors on the live site.
+
+- [x] **OPS-3 — Resolve the GitHub Pages outage: recreate the site in legacy branch mode** | Priority: P0 | M | Created: 2026-08-06 | Completed: 2026-08-06 | Owner: @claude
+  *Supersedes OPS-2.* The Pages **site record** — not the workflow — was corrupted. Deployments reported success and then immediately went inactive; newly queued deploys sat until they died at the server-side 10-minute cap; the live URL served 503 / the GitHub unicorn page. No amount of re-running or re-pointing the deployment source cleared it.
+
+  **Fix:**
+  - Deleted the Pages site outright, waited for the deletion to propagate, then recreated it in **legacy branch mode** — source `main` @ `/`.
+  - `.nojekyll` at the repo root bypasses the Jekyll build failure that started the whole saga, so the legacy builder now ships the static site exactly as committed.
+  - `.github/workflows/pages.yml` demoted to `workflow_dispatch`-only and kept as a manual fallback. Routine deploys run through the legacy branch builder on push to `main`.
+
+  **Verified:**
+  - Live site serving HTTP 200 with the grain fix, the win-banner fix, and the mobile polish all confirmed in production.
+
+  **Operational note (replaces OPS-1/OPS-2 guidance):** `main` is still production, but deploys no longer show up in the Actions tab. If the live site looks stale, check the Pages build directly: `gh api repos/drew-valentine/lightwave/pages/builds/latest`. Builds are running slow — allow several minutes before treating a stale site as a failure.
+
+### v0.6.2 — Mobile grain fix
+
+- [x] **BUG-3 — "Grainy graphics" on mobile** | Priority: P1 | S | Reported: 2026-08-06 (player, mobile) | Completed: 2026-08-06 | Owner: @claude | Branch: `fix/mobile-grain` → `main` @ `v0.6.2`
+  Beams looked speckled and grainy on phones. Root cause was sub-pixel stroke widths: at the ~0.34 board scale mobile uses, the beam core stroked at 0.6px and the dash layer at 0.88px. Sub-pixel strokes get antialiased across neighbouring pixels, and under additive blending those partial coverages accumulate unevenly — which reads as grain.
+
+  **Fix:**
+  - All beam layer widths are now floored in **screen** pixels, so no layer can stroke thinner than a whole device pixel regardless of board scale.
+
+  **Ruled out:**
+  - Device-pixel-ratio handling was checked and is correct — the canvas was never under-resolved. The bug was purely stroke geometry.
+
+  **Verified:**
+  - Confirmed on mobile board scale; fix live in production after OPS-3.
 
 ### v0.6.1 — Win banner wrap fix
 
@@ -243,4 +272,5 @@ _None currently._
 - **v0.4.0** — 2026-08-05 — UX-2: level selector dialog behind the level badge — roman-numeral grid of unlocked levels, `lw_max` persistence, Esc/click-outside close, focus management, ARIA dialog semantics. From `feature/level-selector`.
 - **v0.5.0** — 2026-08-05 — UX-3: radial starting orientations for all rotatable pieces (emitters/condensers/prisms), giving each level a calm starburst opening; never-starts-solved guarantee preserved via simulation check + escalating-jitter fallback. From `feature/radial-start-orientations`.
 - **v0.6.0** — 2026-08-06 — UX-4: mobile touch polish — 44px screen-space grab targets, drag deadzone, wider touch snap tolerance, tap-to-reveal color labels, safe-area insets + `viewport-fit=cover` + `theme-color`, coarse-pointer control sizing, compact view margins, Safari `setPointerCapture` hardening. Verified on emulated iPhone 13 in both orientations with real touch events. From `feature/mobile-polish`.
-- **v0.6.1** — 2026-08-06 — BUG-2: win banner "RESOLVED" no longer wraps on narrow screens — CSS `letter-spacing` tracking replaces literal inter-letter spaces, plus `white-space: nowrap` and `clamp(18px, 6vw, 55px)` viewport-scaled sizing; verified single-line at 320px/375px/desktop. From `fix/win-banner-wrap`. Shipped alongside OPS-2, which moved Pages deployment off the silently-failing legacy Jekyll builder onto the `.github/workflows/pages.yml` GitHub Actions workflow.
+- **v0.6.1** — 2026-08-06 — BUG-2: win banner "RESOLVED" no longer wraps on narrow screens — CSS `letter-spacing` tracking replaces literal inter-letter spaces, plus `white-space: nowrap` and `clamp(18px, 6vw, 55px)` viewport-scaled sizing; verified single-line at 320px/375px/desktop. From `fix/win-banner-wrap`. Shipped alongside OPS-2, which moved Pages deployment off the silently-failing legacy Jekyll builder onto the `.github/workflows/pages.yml` GitHub Actions workflow — since superseded by OPS-3.
+- **v0.6.2** — 2026-08-06 — BUG-3: mobile "grainy graphics" fixed — beam layer widths are now floored in screen pixels, so sub-pixel strokes (core 0.6px, dashes 0.88px at the ~0.34 mobile board scale) can no longer antialias unevenly under additive blending. DPR handling verified correct and ruled out. From `fix/mobile-grain`. Shipped alongside OPS-3, which ended the Pages outage: the corrupted site record was deleted and recreated in legacy branch mode (`main` @ `/`, `.nojekyll`), with the Actions workflow demoted to a `workflow_dispatch`-only manual fallback.
