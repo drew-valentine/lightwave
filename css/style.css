@@ -36,12 +36,6 @@ button { touch-action: manipulation; }
   transition: opacity 0.9s ease;
 }
 
-/* The moment of harmony: after a short beat for the last beam to land,
-   the level breathes down to near-dark so the words can arrive alone. */
-body.won #board { opacity: 0.1; transition: opacity 1.7s ease 0.35s; }
-body.won .hud-top,
-body.won .hud-bottom { opacity: 0.1; transition: opacity 1.7s ease 0.35s; }
-.hud-top, .hud-bottom { transition: opacity 0.9s ease; }
 #board.grab { cursor: grab; }
 #board.grabbing { cursor: grabbing; }
 
@@ -249,30 +243,34 @@ body.won .hud-bottom { opacity: 0.1; transition: opacity 1.7s ease 0.35s; }
   transition: opacity 0.9s ease;
   z-index: 3;
 }
-/* The words surface slowly, after the board has begun to dim. */
+/* The next numeral arrives where the light converged. */
 .win-banner.visible {
   opacity: 1;
-  transition: opacity 2.6s ease 1.1s;
+  transition: opacity 0.7s ease 1.05s;
 }
-.win-banner span {
-  transform: translateY(12px);
-  transition: transform 0.9s ease;
-}
-.win-banner.visible span {
-  transform: translateY(0);
-  transition: transform 2.6s ease 1.1s;
-}
-.win-banner span {
-  font-family: var(--display);
-  font-style: italic;
-  font-size: clamp(19px, 4.5vw, 42px);
-  letter-spacing: 0.12em;
-  line-height: 1.6;
-  max-width: 84vw;
+.win-banner .win-stack {
   text-align: center;
-  text-wrap: balance;
+  transform: scale(0.92);
+  transition: transform 0.5s ease;
+}
+.win-banner.visible .win-stack {
+  transform: scale(1);
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1) 1.05s;
+}
+.win-eyebrow {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.win-numeral {
+  font-family: var(--display);
+  font-size: clamp(72px, 18vw, 168px);
+  line-height: 1;
   color: var(--text-bright);
-  text-shadow: 0 0 34px rgba(200, 215, 255, 0.6);
+  text-shadow: 0 0 55px rgba(200, 215, 255, 0.55);
 }
 
 body.level-enter #board { animation: level-in 0.9s ease; }
@@ -284,7 +282,7 @@ body.level-enter #board { animation: level-in 0.9s ease; }
 @media (prefers-reduced-motion: reduce) {
   body.level-enter #board { animation: none; }
   .chip, .legend, .win-banner, .btn-reset,
-  #board, .hud-top, .hud-bottom, .win-banner span { transition: none; }
+  #board, .win-banner .win-stack { transition: none; }
 }
 
 /* Notch / home-indicator safe areas. */

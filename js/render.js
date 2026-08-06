@@ -301,6 +301,38 @@
     ctx.restore();
   }
 
+  /* The win dissolve: the level's light breaks into particles that spiral
+     home to the center of the board, curling along the golden angle. */
+  const FX_DURATION = 0.95; // seconds per particle, after its delay
+
+  function drawWinFx(ctx, fx, view, t) {
+    const elapsed = (t - fx.start) / 1000 - 0.35; // beat before the release
+    if (elapsed < 0) return;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of fx.parts) {
+      const local = (elapsed - p.delay) / FX_DURATION;
+      if (local <= 0 || local >= 1) continue;
+      const ease = local * local * (3 - 2 * local); // smoothstep
+      const r = p.r0 * (1 - Math.pow(ease, 1.4));
+      const a = p.a0 + ease * 1.15; // golden curl toward home
+      const s = view.toScreen(r * Math.cos(a), r * Math.sin(a));
+      const alpha = Math.pow(Math.sin(Math.PI * local), 0.8) * 0.85;
+      const hex = C.HEX[p.color] || '#cdd8ff';
+      const size = Math.max(1.4, 2.4 * view.scale) * (1 + ease * 0.7);
+      ctx.fillStyle = withAlpha(hex, alpha * 0.3);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, size * 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = withAlpha(hex, alpha);
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   /* Subtle color-name caption under a hovered emitter or well. */
   function drawLabel(ctx, n, view, alpha) {
     if (alpha <= 0) return;
@@ -331,5 +363,5 @@
     }
   }
 
-  NS.RENDER = { drawBackground, drawSpiral, drawBeams, drawComponents, drawLabel, withAlpha };
+  NS.RENDER = { drawBackground, drawSpiral, drawBeams, drawComponents, drawLabel, drawWinFx, withAlpha };
 })(globalThis.LW = globalThis.LW || {});

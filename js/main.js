@@ -14,58 +14,6 @@
     8: 'Some light belongs nowhere. Aim it into the dark.',
   };
 
-  /* Words for the moment of harmony. Nothing was ever wrong — the light
-     simply found its way. Assigned deterministically, distinct across any
-     40 consecutive levels. */
-  const AFFIRMATIONS = [
-    'the light finds its way',
-    'harmony, as it always was',
-    'nothing was ever lost',
-    'all colors come home',
-    'stillness in every beam',
-    'the spiral breathes',
-    'light remembers the way',
-    'every well drinks deeply',
-    'balance was always here',
-    'the spectrum rests',
-    'each ray knows its place',
-    'the dark holds the light gently',
-    'all paths converge in peace',
-    'what was scattered now flows',
-    'the wells are full and quiet',
-    'color meets color, softly',
-    'the beams have settled home',
-    'radiance without effort',
-    'everything in its orbit',
-    'the light was never hurried',
-    'wholeness, quietly arrived',
-    'seven colors, one stillness',
-    'the prism exhales',
-    'gathered, blended, at rest',
-    'the void keeps its distance',
-    'clarity was here all along',
-    'the golden spiral hums',
-    'light bends toward belonging',
-    'no beam travels alone',
-    'the well and the light are one',
-    'patience became radiance',
-    'all hues in gentle accord',
-    'the board breathes out',
-    'brightness finds its level',
-    'what flows apart flows together',
-    'the colors were never apart',
-    'quiet fills the spectrum',
-    'every angle at ease',
-    'the light rests where it belongs',
-    'stillness, luminous and whole',
-  ];
-
-  function affirmationFor(level) {
-    // Coprime stride walks the whole pool: any 40 consecutive levels differ.
-    const base = NS.hashString(state.gameSeed) % AFFIRMATIONS.length;
-    return AFFIRMATIONS[(base + (level - 1) * 17) % AFFIRMATIONS.length];
-  }
-
   const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX'];
   function roman(n) {
     if (n <= 20) return ROMAN[n - 1];
@@ -79,6 +27,7 @@
     dragging: null,     // { node, snapped }
     hotId: null,
     winAt: 0,           // timestamp when win detected, 0 = not won
+    winFx: null,        // dissolve particle system during the win moment
     startedAt: 0,
     hover: { id: null, since: 0 }, // component under the pointer, for color labels
     reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -117,6 +66,7 @@
     hint: document.getElementById('hint'),
     legend: document.getElementById('legend'),
     winBanner: document.getElementById('win-banner'),
+    winNumeral: document.getElementById('win-numeral'),
     badge: document.getElementById('level-badge'),
     overlay: document.getElementById('level-overlay'),
     grid: document.getElementById('level-grid'),
@@ -162,7 +112,6 @@
     state.startedAt = performance.now();
     localStorage.setItem('lw_level', String(n));
     localStorage.setItem('lw_max', String(Math.max(n, maxLevel())));
-    document.body.classList.remove('won');
     hud.winBanner.classList.remove('visible');
     document.body.classList.add('level-enter');
     setTimeout(() => document.body.classList.remove('level-enter'), 900);
@@ -177,18 +126,58 @@
     }
   }
 
-  /* Sequence of the harmony moment (CSS carries the staggering):
-     0.00s  the last beam lands, a still beat
-     0.35s  board and HUD begin breathing down to near-dark (1.7s)
-     1.10s  the words begin to surface (2.6s drift + fade)
-     3.70s  fully present; rest with them
-     5.60s  the next level blooms in                                  */
+  /* The win: the level dissolves into light that spirals home to the
+     center, and where it converges the next level's numeral arrives.
+     0.00s  the last beam lands, wells flare — instant payoff
+     0.35s  the board dissolves into particles streaming to the heart
+     1.05s  the next numeral fades up where the light converged
+     2.70s  the next level blooms in (tap anywhere to skip ahead)      */
+  let winTimer = 0;
+
   function onWin() {
     state.winAt = performance.now();
-    hud.winBanner.querySelector('span').textContent = affirmationFor(state.level.level);
-    document.body.classList.add('won');
+    state.winFx = buildWinFx(state.level, state.beams);
+    hud.winNumeral.textContent = roman(state.level.level + 1);
     hud.winBanner.classList.add('visible');
-    setTimeout(() => loadLevel(state.level.level + 1), 5600);
+    winTimer = setTimeout(advance, state.reducedMotion ? 1900 : 2700);
+  }
+
+  function advance() {
+    clearTimeout(winTimer);
+    state.winFx = null;
+    loadLevel(state.level.level + 1);
+  }
+
+  /* Break the solved level into particles: beams shed light along their
+     length, components burst into rings. Everything spirals home. */
+  function buildWinFx(level, beams) {
+    const parts = [];
+    const push = (x, y, color, delay) => {
+      const r = Math.hypot(x, y);
+      parts.push({ r0: r, a0: Math.atan2(y, x), color, delay });
+    };
+    for (const b of beams) {
+      const len = Math.hypot(b.x2 - b.x1, b.y2 - b.y1);
+      const n = Math.min(26, Math.max(3, Math.floor(len / 34)));
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        push(
+          b.x1 + (b.x2 - b.x1) * t,
+          b.y1 + (b.y2 - b.y1) * t,
+          b.color,
+          t * 0.3 + Math.random() * 0.12
+        );
+      }
+    }
+    for (const c of level.comps) {
+      const rad = E.HIT_RADIUS[c.type] * 0.8;
+      const color = c.color || 0;
+      for (let k = 0; k < 12; k++) {
+        const a = (k / 12) * Math.PI * 2;
+        push(c.x + Math.cos(a) * rad, c.y + Math.sin(a) * rad, color, Math.random() * 0.18);
+      }
+    }
+    return { parts: parts.slice(0, 900), start: performance.now() };
   }
 
   /* ---------- input: drag to rotate ---------- */
@@ -243,7 +232,7 @@
   let touchLabelTimer = 0;
 
   canvas.addEventListener('pointerdown', (ev) => {
-    if (state.winAt) return;
+    if (state.winAt) { advance(); return; } // tap anywhere to skip ahead
     clearTimeout(touchLabelTimer);
     const w = view.toWorld(ev.clientX, ev.clientY);
     const node = findGrabbable(w.x, w.y, ev.pointerType);
@@ -356,10 +345,27 @@
     const w = window.innerWidth, h = window.innerHeight;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     NS.RENDER.drawBackground(ctx, w, h, view);
-    NS.RENDER.drawSpiral(ctx, state.level, view, t);
-    NS.RENDER.drawBeams(ctx, state.beams, view, t, state.reducedMotion);
-    NS.RENDER.drawComponents(ctx, state.level, view, t, state.hotId, state.reducedMotion);
-    if (state.hover.id !== null) {
+
+    // During the win the solid board dissolves out under the particles.
+    let boardAlpha = 1;
+    if (state.winAt) {
+      boardAlpha = state.reducedMotion
+        ? 0
+        : Math.max(0, 1 - (t - state.winAt - 350) / 450);
+    }
+    if (boardAlpha > 0) {
+      ctx.globalAlpha = boardAlpha;
+      NS.RENDER.drawSpiral(ctx, state.level, view, t);
+      NS.RENDER.drawBeams(ctx, state.beams, view, t, state.reducedMotion);
+      NS.RENDER.drawComponents(ctx, state.level, view, t, state.hotId, state.reducedMotion);
+      ctx.globalAlpha = 1;
+    }
+
+    if (state.winFx && !state.reducedMotion) {
+      NS.RENDER.drawWinFx(ctx, state.winFx, view, t);
+    }
+
+    if (!state.winAt && state.hover.id !== null) {
       const n = state.level.comps.find((c) => c.id === state.hover.id);
       if (n) {
         const alpha = Math.min(1, (t - state.hover.since) / 220);
@@ -368,8 +374,6 @@
     }
     requestAnimationFrame(frame);
   }
-
-  NS.affirmationFor = affirmationFor;
 
   resize();
   const saved = parseInt(localStorage.getItem('lw_level') || '1', 10);
