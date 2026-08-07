@@ -273,6 +273,10 @@ button { touch-action: manipulation; }
   color: var(--text-bright);
   text-shadow: 0 0 55px rgba(200, 215, 255, 0.55);
 }
+/* Long numerals (XXXVIII…) shrink to stay on one graceful line. */
+.win-numeral.long { font-size: clamp(44px, 11vw, 112px); }
+.level-badge .numeral.long { font-size: 24px; }
+.level-cell.long { font-size: 12.5px; letter-spacing: 0.02em; }
 
 body.level-enter #board { animation: level-in 0.9s ease; }
 @keyframes level-in {

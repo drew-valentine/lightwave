@@ -14,10 +14,18 @@
     8: 'Some light belongs nowhere. Aim it into the dark.',
   };
 
-  const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV','XVI','XVII','XVIII','XIX','XX'];
+  /* Proper Roman numerals, all the way up. */
+  const ROMAN_VALUES = [
+    [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'],
+    [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'],
+    [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I'],
+  ];
   function roman(n) {
-    if (n <= 20) return ROMAN[n - 1];
-    return String(n);
+    let out = '';
+    for (const [v, s] of ROMAN_VALUES) {
+      while (n >= v) { out += s; n -= v; }
+    }
+    return out;
   }
 
   const state = {
@@ -87,6 +95,7 @@
 
   function refreshHud() {
     hud.levelNo.textContent = roman(state.level.level);
+    hud.levelNo.classList.toggle('long', hud.levelNo.textContent.length >= 5);
     let line = '';
     for (const k of Object.keys(INTRO_LINES)) {
       if (Number(k) === state.level.level) line = INTRO_LINES[k];
@@ -138,6 +147,7 @@
     state.winAt = performance.now();
     state.winFx = buildWinFx(state.level, state.beams);
     hud.winNumeral.textContent = roman(state.level.level + 1);
+    hud.winNumeral.classList.toggle('long', hud.winNumeral.textContent.length >= 5);
     hud.winBanner.classList.add('visible');
     winTimer = setTimeout(advance, state.reducedMotion ? 1900 : 2700);
   }
@@ -333,6 +343,7 @@
       const cell = document.createElement('button');
       cell.className = 'level-cell' + (n === state.level.level ? ' current' : '');
       cell.textContent = roman(n);
+      cell.classList.toggle('long', cell.textContent.length >= 5);
       cell.setAttribute('aria-label', `Level ${n}`);
       cell.addEventListener('click', () => {
         closeSelector();
