@@ -287,7 +287,14 @@
     });
 
     const extent = Math.max(...comps.map((n) => Math.hypot(n.x, n.y)), unit) + 90;
-    return { sockets, unit, extent };
+    // Raw content extremes — the view decides its own breathing room.
+    const bounds = {
+      minX: Math.min(...comps.map((n) => n.x)),
+      maxX: Math.max(...comps.map((n) => n.x)),
+      minY: Math.min(...comps.map((n) => n.y)),
+      maxY: Math.max(...comps.map((n) => n.y)),
+    };
+    return { sockets, unit, extent, bounds };
   }
 
   /* ---------- solution angles ---------- */
@@ -425,6 +432,7 @@
           sockets: layout.sockets,
           unit: layout.unit,
           extent: layout.extent,
+          bounds: layout.bounds,
         };
       }
     }
@@ -436,7 +444,7 @@
     computeSolution(comps, rng);
     scramble(comps, rng);
     E.simulate(comps);
-    return { level: levelNumber, seed: `${gameSeed}:${levelNumber}`, comps, sockets: layout.sockets, unit: layout.unit, extent: layout.extent, fallback: true };
+    return { level: levelNumber, seed: `${gameSeed}:${levelNumber}`, comps, sockets: layout.sockets, unit: layout.unit, extent: layout.extent, bounds: layout.bounds, fallback: true };
   }
 
   NS.GEN = { generate, levelParams, GOLDEN_ANGLE, PHI, wrapAngle };

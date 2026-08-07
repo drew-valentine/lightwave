@@ -59,10 +59,23 @@
     canvas.style.height = window.innerHeight + 'px';
     const w = window.innerWidth, h = window.innerHeight;
     const compact = Math.min(w, h) < 640;
-    const extent = state.level ? state.level.extent : E.WORLD_RADIUS + 80;
-    view.scale = Math.min(w - (compact ? 20 : 40), h - (compact ? 112 : 150)) / (extent * 2);
-    view.cx = w / 2;
-    view.cy = h / 2 - (compact ? 8 : 0);
+    // Fit the level's actual content box (not its worst-case bounding
+    // circle), centered on the content. Compact screens run close to the
+    // true no-clip maximum: hard component rings (~30 world units) always
+    // stay on screen; soft halos may kiss the edges. Desktop breathes more.
+    const b = (state.level && state.level.bounds) || {
+      minX: -E.WORLD_RADIUS, maxX: E.WORLD_RADIUS,
+      minY: -E.WORLD_RADIUS, maxY: E.WORLD_RADIUS,
+    };
+    const pad = compact ? 34 : 64;
+    const availW = w - (compact ? 12 : 40);
+    const availH = h - (compact ? 106 : 150);
+    const boxW = (b.maxX - b.minX) + pad * 2;
+    const boxH = (b.maxY - b.minY) + pad * 2;
+    view.scale = Math.min(availW / boxW, availH / boxH, 1.15);
+    const wcx = (b.minX + b.maxX) / 2, wcy = (b.minY + b.maxY) / 2;
+    view.cx = w / 2 - wcx * view.scale;
+    view.cy = h / 2 - (compact ? 8 : 0) - wcy * view.scale;
   }
   window.addEventListener('resize', resize);
 
@@ -162,9 +175,13 @@
      length, components burst into rings. Everything spirals home. */
   function buildWinFx(level, beams) {
     const parts = [];
+    // Particles spiral home to the content center — the same point where
+    // the next level's numeral arrives on screen.
+    const ccx = (level.bounds.minX + level.bounds.maxX) / 2;
+    const ccy = (level.bounds.minY + level.bounds.maxY) / 2;
     const push = (x, y, color, delay) => {
-      const r = Math.hypot(x, y);
-      parts.push({ r0: r, a0: Math.atan2(y, x), color, delay });
+      const r = Math.hypot(x - ccx, y - ccy);
+      parts.push({ r0: r, a0: Math.atan2(y - ccy, x - ccx), color, delay });
     };
     for (const b of beams) {
       const len = Math.hypot(b.x2 - b.x1, b.y2 - b.y1);
@@ -187,7 +204,7 @@
         push(c.x + Math.cos(a) * rad, c.y + Math.sin(a) * rad, color, Math.random() * 0.18);
       }
     }
-    return { parts: parts.slice(0, 900), start: performance.now() };
+    return { parts: parts.slice(0, 900), cx: ccx, cy: ccy, start: performance.now() };
   }
 
   /* ---------- input: drag to rotate ---------- */
