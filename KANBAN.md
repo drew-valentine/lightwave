@@ -2,7 +2,7 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.9.6` (last merge: `fix/prism-nan-crash`)
+**Active branch:** none — `main` @ `v0.9.7` (last merge: `feature/mobile-fill`)
 **Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll), with builds **requested via the Pages API** by `.github/workflows/request-pages-build.yml` on every push to `main`. Push-triggered builds fail server-side for this repo; API-requested builds succeed. The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-4.
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
 **Last updated:** 2026-08-06
@@ -128,6 +128,29 @@ _(empty)_
   - Live site confirmed serving build **`d30ee87`** — v0.8.0 and v0.8.1 both in production.
 
   **Operational note (adds to OPS-4):** before diagnosing a stale live site as a repo/pipeline problem, **check githubstatus.com**. A green "Request Pages build" run with no published commit, across multiple pushes, is a strong upstream-outage signal — let the watcher retry rather than re-plumbing the pipeline.
+
+### v0.9.7 — Mobile-first board fit
+
+- [x] **UX-12 — Board fits the actual content box, not a worst-case circle: dense levels ~+22-25% larger on phones** | Priority: P1 | M | Requested: 2026-08-06 (player) | Completed: 2026-08-06 | Owner: @claude | Branch: `feature/mobile-fill` → `main` @ `v0.9.7`
+  The view was sized to fit each level's **worst-case bounding circle** — the radius a level's layout *could* reach — rather than what the level actually contained. On a phone that left conspicuous wasted space down both sides while the puzzle itself sat small in the middle.
+
+  **Fix — fit the content, then push compact screens to the true maximum:**
+  - The view now fits the **actual content bounding box**, and centers on the **content** center rather than the nominal board center.
+  - **Compact screens run at the true no-clip maximum:** the fit is computed so **hard component rings are always fully on screen**, while **soft halos are permitted to kiss the edges** — halos are glow, not geometry, so letting them touch the frame costs nothing and buys real size.
+  - **Desktop keeps comfortable padding** — the aggressive fit is a small-screen behavior, not a global one.
+  - **Win-dissolve particles now converge on the content center**, so the spiral lands where the arriving numeral actually is instead of drifting off-axis from it.
+
+  **Result:**
+  - **Dense levels ~+22-25% larger on phones** — the physical maximum available **without altering level geometry**.
+  - **Sparse early levels +65-104% larger**, where the worst-case circle was wasting the most room.
+
+  **False start (worth keeping):** the first attempt applied a **blind 15% overscale**, which **clipped edge components**. It was caught in **screenshot review** and replaced with the exact ring-safe fit above — a fixed margin cannot be safe when the safe margin is per-level.
+
+  **Verified:**
+  - **Zero hard-clipped components across sampled levels.**
+  - **Solve + dissolve regression clean**; **zero console errors**; solvability harness green.
+
+  **Deploy: deploying** — merged to `main` and tagged `v0.9.7`; awaiting the "Request Pages build" run and published-commit confirmation (see OPS-4).
 
 ### v0.9.6 — NaN beam crash fix
 
@@ -538,3 +561,4 @@ _None currently._
 - **v0.9.4** — 2026-08-06 — UX-10: **beam flow now reads as a wave**. Player-requested polish following v0.9.2: the short bright flow beads still read as **whitish specks** because a light tint under **additive** blending adds toward white no matter how the hue is chosen. They are replaced with **long, wide, low-alpha dashes drawn in the beam's own saturated hue** — additive same-hue light can only **brighten**, never desaturate — so the same energy is spread along the beam and the motion reads as a **subtle luminous swell travelling its length** rather than particles riding on top of it. Verified with a **mobile DPR 3 screenshot**, zero console errors, solvability harness green. From `fix/beam-wave-pulse`. **Superseded by v0.9.5** — the dashes still read as bead-like to the player.
 - **v0.9.5** — 2026-08-06 — UX-11: **beam flow is now pure gradient undulation**. The v0.9.4 dashes were still **dashes** — segments have ends, and ends read as beads no matter how long, wide, or low-alpha they are — so the segmented layer is **removed entirely**. Flow is now a **sinusoidal brightness field** along each beam, rendered per frame as a **canvas linear gradient in the beam's own hue**: no dashes, no edges, nothing discrete to perceive as an object riding the light. **Wavelength = half the beam length**, giving every beam exactly **two gentle crests** so the rhythm reads the same on short and long beams alike, drifting **source-to-target at ~4.5s per wavelength**. Verified with an **animation frame-diff test** confirming real motion, **8.3ms median frame time**, zero console errors, solvability harness green. From `feature/gradient-wave`. **Deploying** — awaiting published-commit confirmation. *Also surfaced the latent NaN beam bug fixed in v0.9.6 — `createLinearGradient` throws where `lineTo` had silently swallowed it.*
 - **v0.9.6** — 2026-08-06 — BUG-9: **NaN beam crash fixed** — a player reported the level vanishing mid-drag. Prisms were generated carrying **port offsets only for their own input primaries**, so routing **any other color** into one at play time emitted a beam at angle **`NaN`**. Latent and harmless until now (canvas `lineTo` silently swallows non-finite coordinates), it turned **fatal in v0.9.5**: the new gradient flow layer calls **`createLinearGradient`**, which **throws** on non-finite coordinates, killing the frame mid-draw and leaving the board half-rendered — which read to the player as the level disappearing while they dragged. Fixed in three layers: every prism is now generated with **all three ports** (extras simply **extend the fan**, leaving existing split geometry intact), the **engine guards non-finite offsets** so a malformed component can't emit a NaN-angled beam, and **`drawBeams` skips non-finite beams** so one bad beam can never take down a frame. Verified by an **adversarial routing sweep** — every emitter into **all 221 prisms across 120 levels**, all beams finite — plus **in-browser full-circle drag sweeps on level 18** with zero errors; solvability harness green. From `fix/prism-nan-crash`. **Deploying** — awaiting published-commit confirmation.
+- **v0.9.7** — 2026-08-06 — UX-12: **mobile-first board fit**. The view was sized to each level's **worst-case bounding circle** rather than its actual contents, leaving conspicuous wasted space down both sides on phones. It now fits the **actual content bounding box, centered on the content**, with **compact screens running at the true no-clip maximum** — **hard component rings always fully on screen**, **soft halos permitted to kiss the edges** (glow, not geometry) — while **desktop keeps comfortable padding**. **Win-dissolve particles now converge on the content center**, so the spiral lands where the arriving numeral is. Result: **dense levels ~+22-25% larger on phones** (the physical maximum without altering level geometry) and **sparse early levels +65-104%**. The first attempt used a **blind 15% overscale that clipped edge components** — caught in **screenshot review** and replaced with the exact ring-safe fit, since a fixed margin cannot be safe when the safe margin is per-level. Verified: **zero hard-clipped components across sampled levels**, solve + dissolve regression clean, zero console errors, harness green. From `feature/mobile-fill`. **Deploying** — awaiting published-commit confirmation.
