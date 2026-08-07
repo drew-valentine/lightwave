@@ -53,18 +53,23 @@ button { touch-action: manipulation; }
 .hud-top { top: 0; }
 .hud-bottom { bottom: 0; align-items: flex-end; }
 
+/* A dark halo behind HUD glyphs: invisible over the void, but it keeps
+   beams passing underneath from washing out the text. */
+:root {
+  --text-scrim:
+    0 0 3px rgba(4, 5, 11, 0.95),
+    0 0 8px rgba(4, 5, 11, 0.9),
+    0 0 16px rgba(4, 5, 11, 0.8),
+    0 0 28px rgba(4, 5, 11, 0.6);
+}
+
 .wordmark h1 {
   font-family: var(--display);
   font-weight: 400;
   font-size: 21px;
   letter-spacing: 0.34em;
   color: var(--text-bright);
-}
-.wordmark .rule {
-  margin-top: 8px;
-  width: 55px;
-  height: 1px;
-  background: var(--hairline);
+  text-shadow: var(--text-scrim);
 }
 
 .level-badge {
@@ -90,12 +95,14 @@ button { touch-action: manipulation; }
   margin-right: -0.3em; /* balance the trailing letter-space so centering is true */
   text-transform: uppercase;
   color: var(--text-dim);
+  text-shadow: var(--text-scrim);
 }
 .level-badge .numeral {
   font-family: var(--display);
   font-size: 34px;
   line-height: 1.2;
   color: var(--text-bright);
+  text-shadow: var(--text-scrim);
 }
 
 .legend {
@@ -105,6 +112,7 @@ button { touch-action: manipulation; }
   color: var(--text-dim);
   opacity: 0;
   transition: opacity 0.6s ease;
+  text-shadow: var(--text-scrim);
 }
 .legend.visible { opacity: 0.8; }
 
@@ -144,6 +152,7 @@ button { touch-action: manipulation; }
   letter-spacing: 0.06em;
   color: var(--text-dim);
   min-height: 1.3em;
+  text-shadow: var(--text-scrim);
 }
 
 .btn-reset {
