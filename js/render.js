@@ -100,6 +100,10 @@
     for (const b of beams) {
       const p1 = view.toScreen(b.x1, b.y1);
       const p2 = view.toScreen(b.x2, b.y2);
+      // A non-finite endpoint would make createLinearGradient throw and
+      // kill the whole frame mid-draw. Never let one beam take the level.
+      if (!Number.isFinite(p1.x) || !Number.isFinite(p1.y) ||
+          !Number.isFinite(p2.x) || !Number.isFinite(p2.y)) continue;
       const hex = C.HEX[b.color] || '#ffffff';
       const core = C.CORE_HEX[b.color] || '#ffffff';
 
