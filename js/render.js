@@ -121,13 +121,15 @@
       line(ctx, p1, p2);
 
       if (!reducedMotion) {
-        // Light flowing along the beam, in the beam's own light.
-        const dash = Math.max(3.5, 4.5 * view.scale);
-        const gap = Math.max(24, 34 * view.scale);
-        ctx.strokeStyle = withAlpha(core, 0.85);
-        ctx.lineWidth = Math.max(2, 2.8 * view.scale);
+        // A wave gliding along the beam: long, soft pulses of the beam's
+        // own saturated hue. Additive same-hue only brightens — it can
+        // never whiten — so the wave reads as swelling light, not beads.
+        const dash = Math.max(14, 20 * view.scale);
+        const gap = Math.max(30, 42 * view.scale);
+        ctx.strokeStyle = withAlpha(hex, 0.32);
+        ctx.lineWidth = Math.max(4, 7 * view.scale);
         ctx.setLineDash([dash, gap]);
-        ctx.lineDashOffset = -(t * 0.09) % (dash + gap);
+        ctx.lineDashOffset = -(t * 0.07) % (dash + gap);
         line(ctx, p1, p2);
         ctx.setLineDash([]);
       }
