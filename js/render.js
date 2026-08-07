@@ -148,15 +148,16 @@
     ctx.translate(p.x, p.y);
     ctx.rotate(n.angle);
 
-    // Housing.
-    ctx.strokeStyle = hot ? 'rgba(230,238,255,0.95)' : 'rgba(176,190,235,0.8)';
+    // Housing and nozzle wear the emitted color — legible at a glance.
+    const coreHex = C.CORE_HEX[n.color];
+    ctx.strokeStyle = hot ? withAlpha(coreHex, 0.98) : withAlpha(hex, 0.9);
     ctx.lineWidth = lw(1.6, view);
     ctx.beginPath();
     ctx.arc(0, 0, r * 0.72, 0, Math.PI * 2);
     ctx.stroke();
 
     // Nozzle wedge pointing along the beam.
-    ctx.fillStyle = hot ? 'rgba(230,238,255,0.95)' : 'rgba(176,190,235,0.85)';
+    ctx.fillStyle = hot ? withAlpha(coreHex, 0.98) : withAlpha(hex, 0.92);
     ctx.beginPath();
     ctx.moveTo(r * 1.05, 0);
     ctx.lineTo(r * 0.45, -r * 0.34);
