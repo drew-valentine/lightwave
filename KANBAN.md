@@ -2,7 +2,7 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.8.2` (last merge: `fix/oled-gradient-banding`)
+**Active branch:** none — `main` @ `v0.9.0` (last merge: `feature/grab-beams`)
 **Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll), with builds **requested via the Pages API** by `.github/workflows/request-pages-build.yml` on every push to `main`. Push-triggered builds fail server-side for this repo; API-requested builds succeed. The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-4.
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
 **Last updated:** 2026-08-06
@@ -129,6 +129,34 @@ _(empty)_
 
   **Operational note (adds to OPS-4):** before diagnosing a stale live site as a repo/pipeline problem, **check githubstatus.com**. A green "Request Pages build" run with no published commit, across multiple pushes, is a strong upstream-outage signal — let the watcher retry rather than re-plumbing the pipeline.
 
+### v0.9.0 — Grabbable beams
+
+- [x] **UX-8 — Beams are grabbable: drag anywhere along a beam to re-aim its source** | Priority: P1 | M | Reported: 2026-08-06 (playtester) | Completed: 2026-08-06 | Owner: @claude | Branch: `feature/grab-beams` → `main` @ `v0.9.0`
+  A playtester kept reaching for the **beam** rather than the emitter that cast it — the light is the thing they were trying to steer. The game now agrees with them: a beam is a handle along its entire length.
+
+  **Details:**
+  - Dragging anywhere along a beam re-aims the component that emits it, exactly as dragging the component itself would.
+  - **Prism split-beams** steer their own specific output port, so each fork of a split can be aimed independently by grabbing the fork you mean.
+  - **26px touch hit width** along the beam, so a beam is a thumb-sized target and not a hairline.
+  - Hover shows a **grab cursor** over a beam, so the affordance is discoverable with a mouse rather than something you have to guess.
+  - Level 1 hint updated to teach it: *"Drag the emitter — or its beam —…"*
+
+  **Verified:**
+  - Playwright E2E solves **level 1 exclusively via beam-drag** — never touching a component directly.
+  - **Zero console errors**; solvability harness green.
+
+  **Deploy: deploying** — pushed to `main`; awaiting the "Request Pages build" run and published-commit confirmation (see OPS-4).
+
+### v0.8.3 — Gentler OLED dither
+
+- [x] **BUG-6 — v0.8.2's dither was itself visible as speckle** | Priority: P1 | S | Reported: 2026-08-06 (player screenshot, iPhone 13 mini) | Completed: 2026-08-06 | Owner: @claude | Branch: `fix/gentler-dither` → `main` @ `v0.8.3`
+  The v0.8.2 anti-banding dither cured the banding but overshot: a player screenshot showed the dither reading as visible speckle rather than dissolving invisibly into the gradient.
+
+  **Fix:**
+  - Dither amplitude softened — **capped at roughly 1.5 levels** — strong enough to keep near-black gradients from stepping on OLED, weak enough to stay below the threshold of visible texture.
+
+  **Deploy: shipped to production.**
+
 ### v0.8.0 — Dissolve win sequence
 
 - [x] **UX-7 — Win sequence rebuilt: the level dissolves into light and the next numeral arrives** | Priority: P1 | M | Requested: 2026-08-06 (player) | Completed: 2026-08-06 | Owner: @claude | Branch: `feature/dissolve-win` → `main` @ `v0.8.0`
@@ -164,7 +192,7 @@ _(empty)_
 
   **Deploy: CONFIRMED LIVE in production** — https://drew-valentine.github.io/lightwave/
 
-  *Open: awaiting player confirmation on-device that the grain is gone.*
+  *Follow-up: the player's on-device screenshot showed the dither itself as visible speckle — softened in v0.8.3 (BUG-6).*
 
 ### v0.8.1 — Badge centering fix
 
@@ -392,4 +420,6 @@ _None currently._
 - **v0.7.1** — 2026-08-06 — UX-6: the win moment is now a paced sequence rather than a sudden banner — a 0.35s beat, then board and HUD fade to near-dark over ~1.7s, then the affirmation surfaces from 1.1s over a 2.6s fade with upward drift, rests fully readable, and the next level blooms in at 5.6s. All staggering is CSS-driven; `prefers-reduced-motion` disables the animations. Verified by actually solving level 1 with a real mouse drag in Playwright and sampling opacities across the timeline — 7 checks passing, zero console errors, solvability harness green. From `feature/meditative-win-sequence`. **Never reached production** — the Pages outage blocked publication, and v0.8.0 supersedes it in place.
 - **v0.8.0** — 2026-08-06 — UX-7: the affirmation text is gone. The player rejected the phrasing, so the **40-phrase pool is removed entirely** and the win is carried by motion: on solve the wells flare instantly, the level dissolves into glowing particles spiralling home to the board centre along golden curls as the board fades beneath, and the **next level's numeral arrives in large Didot** where the light converges. Auto-advance cut to **2.7s** (from 5.6s), tap-anywhere to skip, and `prefers-reduced-motion` gets a fast plain path. Verified with a Playwright real-solve E2E — 5 checks (numeral prep, dissolve pixels, numeral presence, auto-advance, tap-skip), zero console errors, solvability harness green. From `feature/dissolve-win`. **CONFIRMED LIVE in production** at build `d30ee87` — the day's stalled deploys were root-caused (OPS-5) to a **GitHub major outage on Pages and Actions**, posted on githubstatus.com mid-afternoon and since resolved; the `request-pages-build` auto-rekick watcher landed the deploy as soon as it cleared.
 - **v0.8.1** — 2026-08-06 — BUG-4: level badge numeral centering fix. From `fix/badge-centering`. **CONFIRMED LIVE in production** in the same `d30ee87` build as v0.8.0.
-- **v0.8.2** — 2026-08-06 — BUG-5: the second round of the iPhone 13 mini "grainy graphics" report. The remaining grain was **OLED gradient banding** — large near-black gradients step visibly on OLED panels — a different cause from the v0.6.2 sub-pixel stroke-floor fix. Fixed with a **static 2% retina-fine dither pattern drawn at one grain per device pixel** over each frame, breaking the banding into smoothness while staying invisible as texture. Verified via Playwright: **36 distinct shades** in a formerly-flat patch, zero console errors, **60fps maintained at DPR 3**. From `fix/oled-gradient-banding`. **CONFIRMED LIVE in production** — awaiting player confirmation on-device.
+- **v0.8.2** — 2026-08-06 — BUG-5: the second round of the iPhone 13 mini "grainy graphics" report. The remaining grain was **OLED gradient banding** — large near-black gradients step visibly on OLED panels — a different cause from the v0.6.2 sub-pixel stroke-floor fix. Fixed with a **static 2% retina-fine dither pattern drawn at one grain per device pixel** over each frame, breaking the banding into smoothness while staying invisible as texture. Verified via Playwright: **36 distinct shades** in a formerly-flat patch, zero console errors, **60fps maintained at DPR 3**. From `fix/oled-gradient-banding`. **CONFIRMED LIVE in production** — but see v0.8.3, where the dither itself proved visible on-device.
+- **v0.8.3** — 2026-08-06 — BUG-6: gentler OLED dither. A player screenshot of v0.8.2 showed the anti-banding dither reading as **visible speckle**, so its amplitude is now **capped at roughly 1.5 levels** — still enough to keep near-black gradients from stepping on OLED, but below the threshold of visible texture. From `fix/gentler-dither`. Shipped to production.
+- **v0.9.0** — 2026-08-06 — UX-8: **grabbable beams**. A playtester kept trying to grab the beam instead of the emitter, so beams are now draggable **anywhere along their length** to re-aim their source component; **prism split-beams steer their own specific output port**, so each fork of a split aims independently. Ships a **26px touch hit width** along the beam and a **hover grab-cursor** affordance, with the level 1 hint updated to teach it (*"Drag the emitter — or its beam —…"*). Verified by a Playwright E2E that solves **level 1 exclusively via beam-drag**, never touching a component directly — zero console errors, solvability harness green. From `feature/grab-beams`. **Deploying** — awaiting published-commit confirmation.
