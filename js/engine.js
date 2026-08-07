@@ -69,7 +69,11 @@
           emit(n, n.angle, prev.get(n.id) || 0);
         } else if (n.type === 'prism') {
           const col = prev.get(n.id) || 0;
-          for (const p of C.primariesOf(col)) emit(n, n.angle + n.offsets[p], p);
+          for (const p of C.primariesOf(col)) {
+            // Generated prisms carry all three port offsets; guard anyway —
+            // a missing one would emit at a NaN angle and poison the frame.
+            if (Number.isFinite(n.offsets[p])) emit(n, n.angle + n.offsets[p], p);
+          }
         }
       }
 

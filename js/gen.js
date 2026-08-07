@@ -359,6 +359,17 @@
           }
           if (!placed) return false;
         }
+        // Every prism carries all three ports: players can route ANY color
+        // into it at play time, and a primary without an offset would emit
+        // at a NaN angle. Extra ports extend the fan outward.
+        let spread = Math.max(...Object.values(n.offsets).map(Math.abs));
+        for (const prim of C.PRIMARIES) {
+          if (n.offsets[prim] === undefined) {
+            spread += 0.5;
+            n.offsets[prim] = side * spread;
+            side = -side;
+          }
+        }
       }
     }
 
