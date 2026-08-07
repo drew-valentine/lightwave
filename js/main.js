@@ -46,12 +46,18 @@
 
   const view = {
     scale: 1, cx: 0, cy: 0,
+    tScale: 1, tCx: 0, tCy: 0,   // targets — the view glides toward these
+    ready: false,
     toScreen(wx, wy) { return { x: this.cx + wx * this.scale, y: this.cy + wy * this.scale }; },
     toWorld(sx, sy) { return { x: (sx - this.cx) / this.scale, y: (sy - this.cy) / this.scale }; },
   };
 
   let dpr = 1;
-  function resize() {
+  /* Backing resolution snaps instantly (crispness is non-negotiable);
+     the framing glides. Mid-play viewport shifts — the iOS URL bar
+     breathing, a rotation — ease over ~300ms instead of teleporting.
+     Level loads pass snap=true: they have their own entrance. */
+  function resize(snap) {
     dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(window.innerWidth * dpr);
     canvas.height = Math.round(window.innerHeight * dpr);
@@ -68,28 +74,34 @@
         minY: -E.WORLD_RADIUS, maxY: E.WORLD_RADIUS,
       };
       const pad = 44;
-      view.scale = Math.min(
+      view.tScale = Math.min(
         (w - 12) / ((b.maxX - b.minX) + pad * 2),
         (h - 106) / ((b.maxY - b.minY) + pad * 2),
         1.15
       );
       const wcx = (b.minX + b.maxX) / 2, wcy = (b.minY + b.maxY) / 2;
-      view.cx = w / 2 - wcx * view.scale;
-      view.cy = h / 2 - 8 - wcy * view.scale;
+      view.tCx = w / 2 - wcx * view.tScale;
+      view.tCy = h / 2 - 8 - wcy * view.tScale;
       view.wcx = wcx; view.wcy = wcy;
     } else {
       // Desktop keeps the original spacious circle fit, world-centered.
       const extent = state.level ? state.level.extent : E.WORLD_RADIUS + 80;
-      view.scale = Math.min(w - 40, h - 150) / (extent * 2);
-      view.cx = w / 2;
-      view.cy = h / 2;
+      view.tScale = Math.min(w - 40, h - 150) / (extent * 2);
+      view.tCx = w / 2;
+      view.tCy = h / 2;
       view.wcx = 0; view.wcy = 0;
     }
+    if (snap === true || !view.ready) {
+      view.scale = view.tScale; view.cx = view.tCx; view.cy = view.tCy;
+      view.ready = true;
+    }
   }
-  window.addEventListener('resize', resize);
-  window.addEventListener('orientationchange', resize);
-  window.addEventListener('pageshow', resize);
-  if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+  // Event objects must not become resize's snap flag.
+  const refit = () => resize(false);
+  window.addEventListener('resize', refit);
+  window.addEventListener('orientationchange', refit);
+  window.addEventListener('pageshow', refit);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', refit);
 
   /* Mobile browsers settle the viewport AFTER first paint (meta-viewport
      parsing, URL bar) — often without firing resize — leaving the canvas
@@ -99,7 +111,7 @@
     const d = window.devicePixelRatio || 1;
     if (canvas.width !== Math.round(window.innerWidth * d) ||
         canvas.height !== Math.round(window.innerHeight * d)) {
-      resize();
+      resize(false); // backing snaps crisp; framing glides
     }
   }
 
@@ -152,7 +164,7 @@
 
   function loadLevel(n) {
     state.level = NS.GEN.generate(state.gameSeed, n);
-    resize();
+    resize(true); // a fresh level snaps its framing — it has its own entrance
     state.beams = E.simulate(state.level.comps).beams;
     state.winAt = 0;
     state.startedAt = performance.now();
@@ -420,8 +432,19 @@
 
   /* ---------- main loop ---------- */
 
+  let lastFrameT = 0;
   function frame(t) {
     ensureCrisp();
+    // Glide the framing toward its target (critically-damped feel).
+    const dt = Math.min(0.05, (t - lastFrameT) / 1000);
+    lastFrameT = t;
+    const k = 1 - Math.exp(-12 * dt);
+    view.scale += (view.tScale - view.scale) * k;
+    view.cx += (view.tCx - view.cx) * k;
+    view.cy += (view.tCy - view.cy) * k;
+    if (Math.abs(view.tScale - view.scale) < 1e-4) view.scale = view.tScale;
+    if (Math.abs(view.tCx - view.cx) < 0.05) view.cx = view.tCx;
+    if (Math.abs(view.tCy - view.cy) < 0.05) view.cy = view.tCy;
     const w = window.innerWidth, h = window.innerHeight;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     NS.RENDER.drawBackground(ctx, w, h, view);
