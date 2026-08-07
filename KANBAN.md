@@ -2,10 +2,10 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.9.10` (last merge: `fix/spiral-curve-bounds`)
+**Active branch:** none — `main` @ `v0.9.11` (last merge: `fix/gentle-refit`)
 **Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll), with builds **requested via the Pages API** by `.github/workflows/request-pages-build.yml` on every push to `main`. Push-triggered builds fail server-side for this repo; API-requested builds succeed. The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-4.
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
-**Last updated:** 2026-08-06
+**Last updated:** 2026-08-07
 
 ---
 
@@ -128,6 +128,22 @@ _(empty)_
   - Live site confirmed serving build **`d30ee87`** — v0.8.0 and v0.8.1 both in production.
 
   **Operational note (adds to OPS-4):** before diagnosing a stale live site as a repo/pipeline problem, **check githubstatus.com**. A green "Request Pages build" run with no published commit, across multiple pushes, is a strong upstream-outage signal — let the watcher retry rather than re-plumbing the pipeline.
+
+### v0.9.11 — Refits glide instead of snapping
+
+- [x] **BUG-13 — Mid-play refits were jarring: the whole view snapped on every silent viewport change** | Priority: P1 | S | Reported: 2026-08-07 (player) | Completed: 2026-08-07 | Owner: @claude | Branch: `fix/gentle-refit` → `main` @ `v0.9.11`
+  *Follows BUG-11 (v0.9.9).* The self-healing canvas did its job too literally. `ensureCrisp` reacted to **every** silent viewport change — including the **iOS URL bar breathing in and out during play** — by **instantly snapping the entire view framing**. Nothing was wrong with the resulting frame; the problem was the discontinuity. To the player the board appeared to jump for no reason, and the jumps felt random and jarring **between levels**.
+
+  **Fix — separate crispness from framing:**
+  - The **canvas backing store still snaps instantly** on any mismatch, so the v0.9.9 crispness guarantee is untouched — resolution is never allowed to lag the viewport.
+  - **View scale and center now glide to their new targets over ~300ms** with **critically-damped easing**, so a viewport change reads as the frame settling rather than teleporting.
+  - **Level loads still snap**, because a level entrance already has its own animation — gliding there would fight it.
+
+  **Verified:**
+  - **Glide observed on viewport change with the backing store instantly crisp** — the two behaviors confirmed independent.
+  - **Solve / advance regression clean**; **zero console errors**; solvability harness green.
+
+  **Deploy: deploying** — merged to `main` and tagged `v0.9.11`; awaiting the "Request Pages build" run and published-commit confirmation (see OPS-4).
 
 ### v0.9.10 — Spiral bounds follow the drawn curve, not just its sockets
 
@@ -613,3 +629,4 @@ _None currently._
 - **v0.9.8** — 2026-08-06 — BUG-10: **full spiral in frame on mobile, desktop framing restored**. A player follow-up to v0.9.7 surfaced two problems with the content-box fit. First, the content bounds were computed from **placed components only**, but the level's **phyllotaxis spiral sockets** are part of the composition whether or not a component occupies them — so the frame pulled in tight and **cropped the decorative spiral** on phones; bounds now **include every spiral socket**, keeping the full figure in frame however sparsely a level is populated. Second, the content-box fit had been applied **globally**, and on desktop it traded the original spacious composition for a tighter, off-center one — **desktop is now fully reverted to the original world-centered circle fit** (the legacy formula itself, not an approximation), making the content-box fit strictly a compact-screen behavior. The **win dissolve converges on the view's world center in both layouts**, so the spiral lands under the arriving numeral on phone and desktop alike. Verified: **all 19 sockets and all component rings on-screen on an emulated iPhone at level 12**, **desktop framing identical to the legacy formula**, zero console errors, solvability harness green. From `fix/spiral-visible-desktop-revert`. **Deploying** — awaiting published-commit confirmation.
 - **v0.9.9** — 2026-08-06 — BUG-11: **first-load blur on mobile fixed with a self-healing canvas**. A player reported the game coming up blurry on a phone's **first** visit and crisp after a refresh. The canvas backing resolution was being computed **before the browser settled the viewport** (meta-viewport parsing, URL-bar chrome), so it was sized from **stale dimensions** and then **CSS-stretched** into blur — and because that settling **often fires no resize event**, a one-shot fit had nothing to correct it; a refresh simply started from already-settled values. The canvas now **verifies every frame that its backing store equals viewport × DPR and refits on mismatch**, so any silent viewport change **heals within one frame**, backed by **`visualViewport`, `orientationchange`, and `pageshow`** listeners for instant correction in the common cases. Verified by **corrupting the backing store at runtime on an emulated iPhone and observing single-frame restoration**, zero console errors, solvability harness green. From `fix/first-load-blur`. **Deploying** — awaiting published-commit confirmation.
 - **v0.9.10** — 2026-08-06 — BUG-12: **spiral bounds now follow the drawn curve, not just its sockets**. A player follow-up **with iPhone screenshots** showed the spiral **still cropped at the screen sides** after v0.9.8. That fix bounded the spiral's **discrete socket points**, but the spiral is **drawn as a continuous curve** sweeping through **all angles between** sockets, so its true extremes **exceeded the socket bounding box** — worst on **sparse levels like II**, where the **arc and edge emitters** clipped at the screen edges. Bounds are now computed by **densely sampling the continuous curve exactly as the renderer draws it**, and **compact padding was raised 34 → 44 world units** so content never sits flush to the bezel. Verified: **dense curve sampling fully on-screen across levels 2/4/6/12/18** with **all component rings safe**, zero console errors, solvability harness green. From `fix/spiral-curve-bounds`. **Deploying** — awaiting published-commit confirmation.
+- **v0.9.11** — 2026-08-07 — BUG-13: **refits now glide instead of snapping**. A player follow-up to v0.9.9: the self-healing canvas reacted to **every silent viewport change** — notably the **iOS URL bar breathing in and out during play** — by **instantly snapping the whole view framing**, which read as the board jumping for no reason and felt **jarring between levels**. Crispness and framing are now decoupled: the **canvas backing store still snaps instantly** on mismatch, preserving the v0.9.9 guarantee that resolution never lags the viewport, while **view scale and center glide to their new targets over ~300ms with critically-damped easing** so a viewport change reads as the frame settling rather than teleporting. **Level loads still snap**, since a level entrance carries its own animation and a glide would fight it. Verified: **glide observed on viewport change with the backing instantly crisp** (the two behaviors confirmed independent), solve/advance regression clean, zero console errors, solvability harness green. From `fix/gentle-refit`. **Deploying** — awaiting published-commit confirmation.
