@@ -87,6 +87,21 @@
     }
   }
   window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', resize);
+  window.addEventListener('pageshow', resize);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+
+  /* Mobile browsers settle the viewport AFTER first paint (meta-viewport
+     parsing, URL bar) — often without firing resize — leaving the canvas
+     backing sized for stale dimensions and CSS-stretched into blur.
+     Self-heal: whenever the backing disagrees with reality, refit. */
+  function ensureCrisp() {
+    const d = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(window.innerWidth * d) ||
+        canvas.height !== Math.round(window.innerHeight * d)) {
+      resize();
+    }
+  }
 
   /* ---------- HUD ---------- */
 
@@ -406,6 +421,7 @@
   /* ---------- main loop ---------- */
 
   function frame(t) {
+    ensureCrisp();
     const w = window.innerWidth, h = window.innerHeight;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     NS.RENDER.drawBackground(ctx, w, h, view);
