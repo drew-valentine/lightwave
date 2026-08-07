@@ -287,12 +287,13 @@
     });
 
     const extent = Math.max(...comps.map((n) => Math.hypot(n.x, n.y)), unit) + 90;
-    // Raw content extremes — the view decides its own breathing room.
+    // Raw content extremes — components AND every spiral socket, so the
+    // full phyllotaxis figure is always in frame. The view adds breathing room.
+    const xs = [...comps.map((n) => n.x), ...sockets.map((s) => s.x)];
+    const ys = [...comps.map((n) => n.y), ...sockets.map((s) => s.y)];
     const bounds = {
-      minX: Math.min(...comps.map((n) => n.x)),
-      maxX: Math.max(...comps.map((n) => n.x)),
-      minY: Math.min(...comps.map((n) => n.y)),
-      maxY: Math.max(...comps.map((n) => n.y)),
+      minX: Math.min(...xs), maxX: Math.max(...xs),
+      minY: Math.min(...ys), maxY: Math.max(...ys),
     };
     return { sockets, unit, extent, bounds };
   }
