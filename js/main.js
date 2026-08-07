@@ -59,23 +59,32 @@
     canvas.style.height = window.innerHeight + 'px';
     const w = window.innerWidth, h = window.innerHeight;
     const compact = Math.min(w, h) < 640;
-    // Fit the level's actual content box (not its worst-case bounding
-    // circle), centered on the content. Compact screens run close to the
-    // true no-clip maximum: hard component rings (~30 world units) always
-    // stay on screen; soft halos may kiss the edges. Desktop breathes more.
-    const b = (state.level && state.level.bounds) || {
-      minX: -E.WORLD_RADIUS, maxX: E.WORLD_RADIUS,
-      minY: -E.WORLD_RADIUS, maxY: E.WORLD_RADIUS,
-    };
-    const pad = compact ? 34 : 64;
-    const availW = w - (compact ? 12 : 40);
-    const availH = h - (compact ? 106 : 150);
-    const boxW = (b.maxX - b.minX) + pad * 2;
-    const boxH = (b.maxY - b.minY) + pad * 2;
-    view.scale = Math.min(availW / boxW, availH / boxH, 1.15);
-    const wcx = (b.minX + b.maxX) / 2, wcy = (b.minY + b.maxY) / 2;
-    view.cx = w / 2 - wcx * view.scale;
-    view.cy = h / 2 - (compact ? 8 : 0) - wcy * view.scale;
+    if (compact) {
+      // Phones fit the level's actual content box (components + full
+      // spiral), centered on it, at the no-clip maximum: hard rings stay
+      // on screen, soft halos may kiss the edges.
+      const b = (state.level && state.level.bounds) || {
+        minX: -E.WORLD_RADIUS, maxX: E.WORLD_RADIUS,
+        minY: -E.WORLD_RADIUS, maxY: E.WORLD_RADIUS,
+      };
+      const pad = 34;
+      view.scale = Math.min(
+        (w - 12) / ((b.maxX - b.minX) + pad * 2),
+        (h - 106) / ((b.maxY - b.minY) + pad * 2),
+        1.15
+      );
+      const wcx = (b.minX + b.maxX) / 2, wcy = (b.minY + b.maxY) / 2;
+      view.cx = w / 2 - wcx * view.scale;
+      view.cy = h / 2 - 8 - wcy * view.scale;
+      view.wcx = wcx; view.wcy = wcy;
+    } else {
+      // Desktop keeps the original spacious circle fit, world-centered.
+      const extent = state.level ? state.level.extent : E.WORLD_RADIUS + 80;
+      view.scale = Math.min(w - 40, h - 150) / (extent * 2);
+      view.cx = w / 2;
+      view.cy = h / 2;
+      view.wcx = 0; view.wcy = 0;
+    }
   }
   window.addEventListener('resize', resize);
 
@@ -175,10 +184,10 @@
      length, components burst into rings. Everything spirals home. */
   function buildWinFx(level, beams) {
     const parts = [];
-    // Particles spiral home to the content center — the same point where
-    // the next level's numeral arrives on screen.
-    const ccx = (level.bounds.minX + level.bounds.maxX) / 2;
-    const ccy = (level.bounds.minY + level.bounds.maxY) / 2;
+    // Particles spiral home to the view's world center — the same point
+    // where the next level's numeral arrives on screen.
+    const ccx = view.wcx || 0;
+    const ccy = view.wcy || 0;
     const push = (x, y, color, delay) => {
       const r = Math.hypot(x - ccx, y - ccy);
       parts.push({ r0: r, a0: Math.atan2(y - ccy, x - ccx), color, delay });
