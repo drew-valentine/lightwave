@@ -6,7 +6,7 @@
   const E = NS.ENGINE;
 
   const INTRO_LINES = {
-    1: 'Drag the emitter to aim its beam into the well.',
+    1: 'Drag the emitter — or its beam — to aim light into the well.',
     2: 'Two beams, two wells. Each well accepts a single beam of its one color.',
     3: 'Wells refuse crowds — blend beams in the condenser, then deliver one.',
     4: 'The prism unbraids light into its primaries.',
@@ -210,6 +210,27 @@
     return findNear(wx, wy, false, grabRadiusWorld(pointerType));
   }
 
+  /* Players reach for the beam itself — grabbing one anywhere along its
+     length re-aims its source. For a prism beam, the grabbed port is the
+     one that follows the pointer. Returns { node, portOffset } or null. */
+  function findBeamGrab(wx, wy, pointerType) {
+    const r = (pointerType === 'touch' ? 26 : 16) / view.scale;
+    let best = null, bestD = r;
+    for (const b of state.beams) {
+      const dx = b.x2 - b.x1, dy = b.y2 - b.y1;
+      const len2 = dx * dx + dy * dy;
+      if (len2 < 1e-6) continue;
+      const t = Math.max(0, Math.min(1, ((wx - b.x1) * dx + (wy - b.y1) * dy) / len2));
+      const d = Math.hypot(wx - (b.x1 + dx * t), wy - (b.y1 + dy * t));
+      if (d < bestD) { best = b; bestD = d; }
+    }
+    if (!best) return null;
+    const node = state.level.comps.find((n) => n.id === best.srcId);
+    if (!node || node.type === 'goal') return null;
+    const portOffset = node.type === 'prism' ? (node.offsets[best.color] || 0) : 0;
+    return { node, portOffset };
+  }
+
   /* Aim assist: snap the raw angle toward directions that point a beam
      (or a prism port) at another component's center. */
   function snapAngle(node, raw, tolerance) {
@@ -235,9 +256,14 @@
     if (state.winAt) { advance(); return; } // tap anywhere to skip ahead
     clearTimeout(touchLabelTimer);
     const w = view.toWorld(ev.clientX, ev.clientY);
-    const node = findGrabbable(w.x, w.y, ev.pointerType);
+    let node = findGrabbable(w.x, w.y, ev.pointerType);
+    let portOffset = 0;
+    if (!node) {
+      const beamGrab = findBeamGrab(w.x, w.y, ev.pointerType);
+      if (beamGrab) { node = beamGrab.node; portOffset = beamGrab.portOffset; }
+    }
     if (node) {
-      state.dragging = { node, pointerType: ev.pointerType };
+      state.dragging = { node, portOffset, pointerType: ev.pointerType };
       state.hotId = node.id;
       if (state.hover.id !== node.id) state.hover = { id: node.id, since: performance.now() };
       try { canvas.setPointerCapture(ev.pointerId); } catch (e) { /* pointer already gone */ }
@@ -261,13 +287,14 @@
       // A finger right on the pivot gives meaningless, jittery angles.
       const distPx = Math.hypot(w.x - n.x, w.y - n.y) * view.scale;
       if (distPx < DRAG_DEADZONE_PX) return;
-      const raw = Math.atan2(w.y - n.y, w.x - n.x);
+      const raw = Math.atan2(w.y - n.y, w.x - n.x) - (state.dragging.portOffset || 0);
       const snap = snapAngle(n, raw, state.dragging.pointerType === 'touch' ? SNAP_TOUCH : SNAP_MOUSE);
       n.angle = snap.angle;
       state.dragging.snapped = snap.snapped;
       resim();
     } else if (ev.pointerType !== 'touch') {
-      const grab = findGrabbable(w.x, w.y, ev.pointerType);
+      const grab = findGrabbable(w.x, w.y, ev.pointerType) ||
+        (findBeamGrab(w.x, w.y, ev.pointerType) || {}).node;
       state.hotId = grab ? grab.id : null;
       canvas.classList.toggle('grab', !!grab);
       const over = findNear(w.x, w.y, true);
