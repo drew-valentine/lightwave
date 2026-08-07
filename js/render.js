@@ -121,17 +121,22 @@
       line(ctx, p1, p2);
 
       if (!reducedMotion) {
-        // A wave gliding along the beam: long, soft pulses of the beam's
-        // own saturated hue. Additive same-hue only brightens — it can
-        // never whiten — so the wave reads as swelling light, not beads.
-        const dash = Math.max(14, 20 * view.scale);
-        const gap = Math.max(30, 42 * view.scale);
-        ctx.strokeStyle = withAlpha(hex, 0.32);
-        ctx.lineWidth = Math.max(4, 7 * view.scale);
-        ctx.setLineDash([dash, gap]);
-        ctx.lineDashOffset = -(t * 0.07) % (dash + gap);
+        // The flow is a smooth sinusoidal brightness field: wavelength is
+        // half the beam's length (two gentle crests), drifting slowly from
+        // source to target. Pure gradient motion — no edges, no beads —
+        // in the beam's own hue, so it undulates without ever whitening.
+        const grad = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
+        const periods = 2;
+        const phase = t * 0.00022; // one wavelength every ~4.5s — unhurried
+        const STOPS = 16;
+        for (let i = 0; i <= STOPS; i++) {
+          const s = i / STOPS;
+          const wave = 0.5 + 0.5 * Math.sin(2 * Math.PI * (s * periods - phase));
+          grad.addColorStop(s, withAlpha(hex, 0.05 + 0.28 * wave));
+        }
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = Math.max(3.5, 6.5 * view.scale);
         line(ctx, p1, p2);
-        ctx.setLineDash([]);
       }
     }
     ctx.restore();
