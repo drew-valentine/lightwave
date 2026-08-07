@@ -2,7 +2,7 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.9.0` (last merge: `feature/grab-beams`)
+**Active branch:** none — `main` @ `v0.9.1` (last merge: `feature/colored-emitters`)
 **Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll), with builds **requested via the Pages API** by `.github/workflows/request-pages-build.yml` on every push to `main`. Push-triggered builds fail server-side for this repo; API-requested builds succeed. The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-4.
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
 **Last updated:** 2026-08-06
@@ -47,7 +47,7 @@ _(empty)_
 - [ ] **Undo: step back one placement/rotation (currently reset-only)** | Priority: P2 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Move counter + par score per level** | Priority: P3 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Accessibility: colorblind-safe mode (shape/pattern encoding alongside hue), keyboard control, reduced-motion** | Priority: P1 | Created: 2026-08-05 | Owner: unassigned
-  *Partially addressed by UX-1 (v0.3.0) and UX-4 (v0.6.0): color labels name the color of any emitter or goal well — on hover with a mouse, on tap with touch — so hue is no longer the only channel. Still open: persistent per-color shape/pattern encoding that requires no interaction at all, keyboard control, and reduced-motion support.*
+  *Partially addressed by UX-1 (v0.3.0), UX-4 (v0.6.0), and UX-9 (v0.9.1): color labels name the color of any emitter or goal well — on hover with a mouse, on tap with touch — and emitter housings are now tinted with the color they emit, so an emitter's color is legible at rest without interaction. Still open: hue remains the only always-on channel — persistent per-color **shape/pattern** encoding, keyboard control, and reduced-motion support.*
 - [ ] **Hand-authored showcase levels for the tutorial arc** | Priority: P3 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Level editor (sandbox mode)** | Priority: P3 | Created: 2026-08-05 | Owner: unassigned
 - [ ] **Performance pass: beam propagation + render budget on large boards** | Priority: P2 | Created: 2026-08-05 | Owner: unassigned
@@ -128,6 +128,23 @@ _(empty)_
   - Live site confirmed serving build **`d30ee87`** — v0.8.0 and v0.8.1 both in production.
 
   **Operational note (adds to OPS-4):** before diagnosing a stale live site as a repo/pipeline problem, **check githubstatus.com**. A green "Request Pages build" run with no published commit, across multiple pushes, is a strong upstream-outage signal — let the watcher retry rather than re-plumbing the pipeline.
+
+### v0.9.1 — Colored emitters
+
+- [x] **UX-9 — Emitter housings tinted with the color they emit** | Priority: P1 | S | Requested: 2026-08-06 (player) | Completed: 2026-08-06 | Owner: @claude | Branch: `feature/colored-emitters` → `main` @ `v0.9.1`
+  Emitters all wore the same neutral housing, so the only way to tell what color one cast was to trace its beam or reveal its label. The housing now says it directly.
+
+  **Details:**
+  - Emitter **housing rings and nozzle wedges** are tinted with the emitted color, so every emitter's color is legible at a glance.
+  - **Hover brightens** the tint to the lighter core color, keeping the existing hover affordance readable against the new base tint.
+  - **Condensers deliberately stay neutral** — a condenser's identity is the blend pooling inside it, not a fixed color it owns, so tinting the housing would assert a color it does not have.
+
+  **Verified:**
+  - Screenshot-verified on a dense level; **zero console errors**; solvability harness green.
+
+  *Further advances the Accessibility backlog item: emitter color no longer requires hover or tap to read. Color is still the only channel, though — per-color shape encoding remains open in Backlog.*
+
+  **Deploy: deploying** — pushed to `main`; awaiting the "Request Pages build" run and published-commit confirmation (see OPS-4).
 
 ### v0.9.0 — Grabbable beams
 
@@ -423,3 +440,4 @@ _None currently._
 - **v0.8.2** — 2026-08-06 — BUG-5: the second round of the iPhone 13 mini "grainy graphics" report. The remaining grain was **OLED gradient banding** — large near-black gradients step visibly on OLED panels — a different cause from the v0.6.2 sub-pixel stroke-floor fix. Fixed with a **static 2% retina-fine dither pattern drawn at one grain per device pixel** over each frame, breaking the banding into smoothness while staying invisible as texture. Verified via Playwright: **36 distinct shades** in a formerly-flat patch, zero console errors, **60fps maintained at DPR 3**. From `fix/oled-gradient-banding`. **CONFIRMED LIVE in production** — but see v0.8.3, where the dither itself proved visible on-device.
 - **v0.8.3** — 2026-08-06 — BUG-6: gentler OLED dither. A player screenshot of v0.8.2 showed the anti-banding dither reading as **visible speckle**, so its amplitude is now **capped at roughly 1.5 levels** — still enough to keep near-black gradients from stepping on OLED, but below the threshold of visible texture. From `fix/gentler-dither`. Shipped to production.
 - **v0.9.0** — 2026-08-06 — UX-8: **grabbable beams**. A playtester kept trying to grab the beam instead of the emitter, so beams are now draggable **anywhere along their length** to re-aim their source component; **prism split-beams steer their own specific output port**, so each fork of a split aims independently. Ships a **26px touch hit width** along the beam and a **hover grab-cursor** affordance, with the level 1 hint updated to teach it (*"Drag the emitter — or its beam —…"*). Verified by a Playwright E2E that solves **level 1 exclusively via beam-drag**, never touching a component directly — zero console errors, solvability harness green. From `feature/grab-beams`. **Deploying** — awaiting published-commit confirmation.
+- **v0.9.1** — 2026-08-06 — UX-9: **colored emitters**. Emitter **housing rings and nozzle wedges** are now tinted with the color that emitter casts, so its color is legible at a glance rather than only by tracing the beam or revealing the label; **hover brightens** the tint to the lighter core color. **Condensers deliberately stay neutral** — their identity is the blend pooling inside, not a color they own. Screenshot-verified on a dense level, zero console errors, solvability harness green. From `feature/colored-emitters`. Further advances the colorblind/accessibility item, though **color remains the only always-on channel** — shape-per-color encoding stays open in Backlog. **Deploying** — awaiting published-commit confirmation.
