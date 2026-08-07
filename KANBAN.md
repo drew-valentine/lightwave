@@ -2,10 +2,10 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.9.11` (last merge: `fix/gentle-refit`)
+**Active branch:** none — `main` @ `v0.9.12` (last merge: `fix/hud-legibility`)
 **Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll), with builds **requested via the Pages API** by `.github/workflows/request-pages-build.yml` on every push to `main`. Push-triggered builds fail server-side for this repo; API-requested builds succeed. The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-4.
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
-**Last updated:** 2026-08-07
+**Last updated:** 2026-08-07 (v0.9.12)
 
 ---
 
@@ -128,6 +128,26 @@ _(empty)_
   - Live site confirmed serving build **`d30ee87`** — v0.8.0 and v0.8.1 both in production.
 
   **Operational note (adds to OPS-4):** before diagnosing a stale live site as a repo/pipeline problem, **check githubstatus.com**. A green "Request Pages build" run with no published commit, across multiple pushes, is a strong upstream-outage signal — let the watcher retry rather than re-plumbing the pipeline.
+
+### v0.9.12 — HUD legible over beams, wordmark rule removed
+
+- [x] **BUG-14 — Beams crossing under the HUD washed out the wordmark and level badge** | Priority: P1 | S | Reported: 2026-08-07 (player) | Completed: 2026-08-07 | Owner: @claude | Branch: `fix/hud-legibility` → `main` @ `v0.9.12`
+  Any beam that happened to pass beneath the **LIGHTWAVE wordmark** or the **level badge** washed the text out — bright additive light directly under thin light-colored glyphs left them unreadable. Since beams are player-aimed, this was reachable at will rather than a rare layout accident.
+
+  **Fix — a scrim that only exists where the text is:**
+  - All HUD glyphs — **wordmark, badge eyebrow and numeral, hint, legend** — now carry a **layered dark text-shadow scrim** (`--text-scrim`) behind them.
+  - The scrim is **invisible against the dark background** (dark on dark) and **dims any beam passing beneath the text**, so legibility is restored without adding a visible plate or box over the board.
+
+  **Verified:**
+  - **Beams deliberately aimed through the title and the badge**; text stayed readable in both.
+  - **Zero console errors**; harness green.
+
+- [x] **UX-13 — Short underline rule below the LIGHTWAVE wordmark removed** | Priority: P2 | S | Requested: 2026-08-07 (player) | Completed: 2026-08-07 | Owner: @claude | Branch: `fix/hud-legibility` → `main` @ `v0.9.12`
+  Player preference: the short rule under the wordmark is gone. The wordmark now stands on its own letterspacing.
+
+  **Verified:** shipped and reviewed alongside BUG-14 on the same branch; zero console errors, harness green.
+
+  **Deploy: deploying** — merged to `main` and tagged `v0.9.12`; awaiting the "Request Pages build" run and published-commit confirmation (see OPS-4).
 
 ### v0.9.11 — Refits glide instead of snapping
 
@@ -630,3 +650,4 @@ _None currently._
 - **v0.9.9** — 2026-08-06 — BUG-11: **first-load blur on mobile fixed with a self-healing canvas**. A player reported the game coming up blurry on a phone's **first** visit and crisp after a refresh. The canvas backing resolution was being computed **before the browser settled the viewport** (meta-viewport parsing, URL-bar chrome), so it was sized from **stale dimensions** and then **CSS-stretched** into blur — and because that settling **often fires no resize event**, a one-shot fit had nothing to correct it; a refresh simply started from already-settled values. The canvas now **verifies every frame that its backing store equals viewport × DPR and refits on mismatch**, so any silent viewport change **heals within one frame**, backed by **`visualViewport`, `orientationchange`, and `pageshow`** listeners for instant correction in the common cases. Verified by **corrupting the backing store at runtime on an emulated iPhone and observing single-frame restoration**, zero console errors, solvability harness green. From `fix/first-load-blur`. **Deploying** — awaiting published-commit confirmation.
 - **v0.9.10** — 2026-08-06 — BUG-12: **spiral bounds now follow the drawn curve, not just its sockets**. A player follow-up **with iPhone screenshots** showed the spiral **still cropped at the screen sides** after v0.9.8. That fix bounded the spiral's **discrete socket points**, but the spiral is **drawn as a continuous curve** sweeping through **all angles between** sockets, so its true extremes **exceeded the socket bounding box** — worst on **sparse levels like II**, where the **arc and edge emitters** clipped at the screen edges. Bounds are now computed by **densely sampling the continuous curve exactly as the renderer draws it**, and **compact padding was raised 34 → 44 world units** so content never sits flush to the bezel. Verified: **dense curve sampling fully on-screen across levels 2/4/6/12/18** with **all component rings safe**, zero console errors, solvability harness green. From `fix/spiral-curve-bounds`. **Deploying** — awaiting published-commit confirmation.
 - **v0.9.11** — 2026-08-07 — BUG-13: **refits now glide instead of snapping**. A player follow-up to v0.9.9: the self-healing canvas reacted to **every silent viewport change** — notably the **iOS URL bar breathing in and out during play** — by **instantly snapping the whole view framing**, which read as the board jumping for no reason and felt **jarring between levels**. Crispness and framing are now decoupled: the **canvas backing store still snaps instantly** on mismatch, preserving the v0.9.9 guarantee that resolution never lags the viewport, while **view scale and center glide to their new targets over ~300ms with critically-damped easing** so a viewport change reads as the frame settling rather than teleporting. **Level loads still snap**, since a level entrance carries its own animation and a glide would fight it. Verified: **glide observed on viewport change with the backing instantly crisp** (the two behaviors confirmed independent), solve/advance regression clean, zero console errors, solvability harness green. From `fix/gentle-refit`. **Deploying** — awaiting published-commit confirmation.
+- **v0.9.12** — 2026-08-07 — BUG-14 + UX-13: **two player-requested HUD fixes shipped together**. First, **HUD legibility over beams**: any beam crossing beneath the **LIGHTWAVE wordmark** or the **level badge** washed the text out — bright additive light under thin light glyphs — and because beams are player-aimed this was reachable at will, not a rare accident. Every HUD glyph (**wordmark, badge eyebrow and numeral, hint, legend**) now carries a **layered dark text-shadow scrim** (`--text-scrim`) that is **invisible against the dark background** while **dimming any beam passing beneath the text**, restoring legibility without putting a visible plate over the board; verified by **deliberately aiming beams through the title and the badge**. Second, the **short underline rule below the LIGHTWAVE wordmark is removed** per player preference — the wordmark now stands on its own letterspacing. Zero console errors, harness green. From `fix/hud-legibility`. **Deploying** — awaiting published-commit confirmation.
