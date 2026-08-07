@@ -287,10 +287,18 @@
     });
 
     const extent = Math.max(...comps.map((n) => Math.hypot(n.x, n.y)), unit) + 90;
-    // Raw content extremes — components AND every spiral socket, so the
-    // full phyllotaxis figure is always in frame. The view adds breathing room.
+    // Raw content extremes — components, sockets, AND the continuous
+    // spiral curve itself: the drawn arc sweeps through all angles, so its
+    // extremes reach beyond the discrete socket points (worst on sparse
+    // levels). Sampled the same way the renderer draws it.
     const xs = [...comps.map((n) => n.x), ...sockets.map((s) => s.x)];
     const ys = [...comps.map((n) => n.y), ...sockets.map((s) => s.y)];
+    for (let s2 = 0; s2 <= maxSlot; s2 += 0.2) {
+      const r = unit * Math.sqrt(s2 + 0.62);
+      const a = s2 * GOLDEN_ANGLE;
+      xs.push(r * Math.cos(a));
+      ys.push(r * Math.sin(a));
+    }
     const bounds = {
       minX: Math.min(...xs), maxX: Math.max(...xs),
       minY: Math.min(...ys), maxY: Math.max(...ys),

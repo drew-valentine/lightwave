@@ -67,7 +67,7 @@
         minX: -E.WORLD_RADIUS, maxX: E.WORLD_RADIUS,
         minY: -E.WORLD_RADIUS, maxY: E.WORLD_RADIUS,
       };
-      const pad = 34;
+      const pad = 44;
       view.scale = Math.min(
         (w - 12) / ((b.maxX - b.minX) + pad * 2),
         (h - 106) / ((b.maxY - b.minY) + pad * 2),
