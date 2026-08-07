@@ -2,7 +2,7 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.9.1` (last merge: `feature/colored-emitters`)
+**Active branch:** none — `main` @ `v0.9.2` (last merge: `fix/beam-color-saturation`)
 **Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll), with builds **requested via the Pages API** by `.github/workflows/request-pages-build.yml` on every push to `main`. Push-triggered builds fail server-side for this repo; API-requested builds succeed. The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-4.
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
 **Last updated:** 2026-08-06
@@ -128,6 +128,25 @@ _(empty)_
   - Live site confirmed serving build **`d30ee87`** — v0.8.0 and v0.8.1 both in production.
 
   **Operational note (adds to OPS-4):** before diagnosing a stale live site as a repo/pipeline problem, **check githubstatus.com**. A green "Request Pages build" run with no published commit, across multiple pushes, is a strong upstream-outage signal — let the watcher retry rather than re-plumbing the pipeline.
+
+### v0.9.2 — Beam hue saturation fix
+
+- [x] **BUG-7 — Beams washed out to near-white, worst on mobile** | Priority: P1 | S | Reported: 2026-08-06 (player) | Completed: 2026-08-06 | Owner: @claude | Branch: `fix/beam-color-saturation` → `main` @ `v0.9.2`
+  A player reported that beams read as nearly white rather than as their color. Root cause was hue loss stacked across the beam's layers: the **core line was drawn near-white**, and the **traveling flow beads were pure white**, so under additive blending the two together overwhelmed the colored layers beneath. The effect was **worst on mobile**, where the v0.6.2 screen-pixel stroke floors make those thin top layers proportionally the widest part of the beam.
+
+  **Fix — hue discipline across every beam layer:**
+  - **Center line** now draws in the **saturated** beam color instead of near-white.
+  - **Traveling flow beads** draw in the hue's **light tint** — luminance lifted enough to stay visible against the core, but the hue is preserved rather than discarded to white.
+  - **Beads slightly lengthened**, so the flow still reads as motion at the lower contrast.
+  - **Mid-layer saturation raised**, reinforcing the hue underneath.
+
+  **Verified:**
+  - Desktop **and mobile DPR 3** screenshots — beams read as their color at both scales.
+  - **Zero console errors**; solvability harness green.
+
+  **Deploy: deploying** — pushed to `main`; awaiting the "Request Pages build" run and published-commit confirmation (see OPS-4).
+
+  *Relevant to the Accessibility backlog item: hue is currently the only always-on channel identifying a beam, so hue fidelity is load-bearing until per-color shape/pattern encoding lands.*
 
 ### v0.9.1 — Colored emitters
 
@@ -441,3 +460,4 @@ _None currently._
 - **v0.8.3** — 2026-08-06 — BUG-6: gentler OLED dither. A player screenshot of v0.8.2 showed the anti-banding dither reading as **visible speckle**, so its amplitude is now **capped at roughly 1.5 levels** — still enough to keep near-black gradients from stepping on OLED, but below the threshold of visible texture. From `fix/gentler-dither`. Shipped to production.
 - **v0.9.0** — 2026-08-06 — UX-8: **grabbable beams**. A playtester kept trying to grab the beam instead of the emitter, so beams are now draggable **anywhere along their length** to re-aim their source component; **prism split-beams steer their own specific output port**, so each fork of a split aims independently. Ships a **26px touch hit width** along the beam and a **hover grab-cursor** affordance, with the level 1 hint updated to teach it (*"Drag the emitter — or its beam —…"*). Verified by a Playwright E2E that solves **level 1 exclusively via beam-drag**, never touching a component directly — zero console errors, solvability harness green. From `feature/grab-beams`. **Deploying** — awaiting published-commit confirmation.
 - **v0.9.1** — 2026-08-06 — UX-9: **colored emitters**. Emitter **housing rings and nozzle wedges** are now tinted with the color that emitter casts, so its color is legible at a glance rather than only by tracing the beam or revealing the label; **hover brightens** the tint to the lighter core color. **Condensers deliberately stay neutral** — their identity is the blend pooling inside, not a color they own. Screenshot-verified on a dense level, zero console errors, solvability harness green. From `feature/colored-emitters`. Further advances the colorblind/accessibility item, though **color remains the only always-on channel** — shape-per-color encoding stays open in Backlog. **Deploying** — awaiting published-commit confirmation.
+- **v0.9.2** — 2026-08-06 — BUG-7: **beam hue wash-out fixed**. A player reported beams looking nearly white; the hue was being lost at the top of the layer stack — a **near-white core line** plus **pure-white traveling flow beads** additively washed out the colored layers beneath, worst on **mobile**, where the v0.6.2 screen-pixel stroke floors make those thin layers proportionally widest. Fixed with hue discipline across all beam layers: the **center line now draws in the saturated beam color**, the **flow beads draw in the hue's light tint** (luminance lifted for visibility, hue preserved rather than discarded to white), **beads slightly lengthened** so the motion still reads at lower contrast, and **mid-layer saturation raised**. Verified with desktop **and mobile DPR 3** screenshots, zero console errors, solvability harness green. From `fix/beam-color-saturation`. **Deploying** — awaiting published-commit confirmation.
