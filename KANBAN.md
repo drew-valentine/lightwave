@@ -2,7 +2,7 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.9.2` (last merge: `fix/beam-color-saturation`)
+**Active branch:** none — `main` @ `v0.9.3` (last merge: `fix/roman-numerals-forever`)
 **Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll), with builds **requested via the Pages API** by `.github/workflows/request-pages-build.yml` on every push to `main`. Push-triggered builds fail server-side for this repo; API-requested builds succeed. The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-4.
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
 **Last updated:** 2026-08-06
@@ -128,6 +128,22 @@ _(empty)_
   - Live site confirmed serving build **`d30ee87`** — v0.8.0 and v0.8.1 both in production.
 
   **Operational note (adds to OPS-4):** before diagnosing a stale live site as a repo/pipeline problem, **check githubstatus.com**. A green "Request Pages build" run with no published commit, across multiple pushes, is a strong upstream-outage signal — let the watcher retry rather than re-plumbing the pipeline.
+
+### v0.9.3 — Roman numerals beyond XX
+
+- [x] **BUG-8 — Roman numerals stopped at XX; levels 21+ showed decimal digits** | Priority: P1 | S | Reported: 2026-08-06 (player) | Completed: 2026-08-06 | Owner: @claude | Branch: `fix/roman-numerals-forever` → `main` @ `v0.9.3`
+  A player reached level 21 and the game stopped speaking its own language — the level badge, the win-arrival numeral, and the level selector all fell back to decimal digits. Root cause was a **hardcoded `I`–`XX` lookup array** left over from the first build, which simply ran out.
+
+  **Fix:**
+  - Replaced the lookup with **standard subtractive Roman conversion**, so any level number renders as a numeral — the game no longer has a ceiling on its own typography.
+  - **Long-numeral downsizing** (class-based) applied in the **level badge**, the **win arrival numeral**, and the **selector cells**, so wide numerals like `XXXVIII` fit their circle instead of overflowing it.
+
+  **Verified:**
+  - **15-case unit check** of the conversion, including `XLIV`, `XCIX`, and `MCMXCIX`.
+  - **Playwright selector check at 40 unlocked levels** — zero overflow across the grid.
+  - **Zero console errors**; solvability harness green.
+
+  **Deploy: deploying** — pushed to `main`; awaiting the "Request Pages build" run and published-commit confirmation (see OPS-4).
 
 ### v0.9.2 — Beam hue saturation fix
 
@@ -461,3 +477,4 @@ _None currently._
 - **v0.9.0** — 2026-08-06 — UX-8: **grabbable beams**. A playtester kept trying to grab the beam instead of the emitter, so beams are now draggable **anywhere along their length** to re-aim their source component; **prism split-beams steer their own specific output port**, so each fork of a split aims independently. Ships a **26px touch hit width** along the beam and a **hover grab-cursor** affordance, with the level 1 hint updated to teach it (*"Drag the emitter — or its beam —…"*). Verified by a Playwright E2E that solves **level 1 exclusively via beam-drag**, never touching a component directly — zero console errors, solvability harness green. From `feature/grab-beams`. **Deploying** — awaiting published-commit confirmation.
 - **v0.9.1** — 2026-08-06 — UX-9: **colored emitters**. Emitter **housing rings and nozzle wedges** are now tinted with the color that emitter casts, so its color is legible at a glance rather than only by tracing the beam or revealing the label; **hover brightens** the tint to the lighter core color. **Condensers deliberately stay neutral** — their identity is the blend pooling inside, not a color they own. Screenshot-verified on a dense level, zero console errors, solvability harness green. From `feature/colored-emitters`. Further advances the colorblind/accessibility item, though **color remains the only always-on channel** — shape-per-color encoding stays open in Backlog. **Deploying** — awaiting published-commit confirmation.
 - **v0.9.2** — 2026-08-06 — BUG-7: **beam hue wash-out fixed**. A player reported beams looking nearly white; the hue was being lost at the top of the layer stack — a **near-white core line** plus **pure-white traveling flow beads** additively washed out the colored layers beneath, worst on **mobile**, where the v0.6.2 screen-pixel stroke floors make those thin layers proportionally widest. Fixed with hue discipline across all beam layers: the **center line now draws in the saturated beam color**, the **flow beads draw in the hue's light tint** (luminance lifted for visibility, hue preserved rather than discarded to white), **beads slightly lengthened** so the motion still reads at lower contrast, and **mid-layer saturation raised**. Verified with desktop **and mobile DPR 3** screenshots, zero console errors, solvability harness green. From `fix/beam-color-saturation`. **Deploying** — awaiting published-commit confirmation.
+- **v0.9.3** — 2026-08-06 — BUG-8: **Roman numerals no longer stop at XX**. A player reached level 21 and found decimal digits in the level badge, the win arrival numeral, and the level selector — a **hardcoded `I`–`XX` array** from the first build had run out. Replaced with **standard subtractive Roman conversion** for any level number, plus **class-based long-numeral downsizing** in the badge, the win numeral, and the selector cells so wide numerals like `XXXVIII` fit their circle. Verified with a **15-case unit check** (including `XLIV`, `XCIX`, `MCMXCIX`) and a **Playwright selector check at 40 unlocked levels with zero overflow**, zero console errors, solvability harness green. From `fix/roman-numerals-forever`. **Deploying** — awaiting published-commit confirmation.
