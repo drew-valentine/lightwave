@@ -368,7 +368,7 @@
       const ease = local * local * (3 - 2 * local); // smoothstep
       const r = p.r0 * (1 - Math.pow(ease, 1.4));
       const a = p.a0 + ease * 1.15; // golden curl toward home
-      const s = view.toScreen(r * Math.cos(a), r * Math.sin(a));
+      const s = view.toScreen((fx.cx || 0) + r * Math.cos(a), (fx.cy || 0) + r * Math.sin(a));
       const alpha = Math.pow(Math.sin(Math.PI * local), 0.8) * 0.85;
       const hex = C.HEX[p.color] || '#cdd8ff';
       const size = Math.max(1.4, 2.4 * view.scale) * (1 + ease * 0.7);
