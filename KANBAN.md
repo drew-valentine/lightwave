@@ -2,7 +2,7 @@
 
 A browser-playable puzzle game about the properties of light.
 
-**Active branch:** none — `main` @ `v0.9.4` (last merge: `fix/beam-wave-pulse`)
+**Active branch:** none — `main` @ `v0.9.5` (last merge: `feature/gradient-wave`)
 **Live site:** https://drew-valentine.github.io/lightwave/ — GitHub Pages, deployed from `main` by the **legacy branch builder** (source: `main` @ `/`, with `.nojekyll` bypassing Jekyll), with builds **requested via the Pages API** by `.github/workflows/request-pages-build.yml` on every push to `main`. Push-triggered builds fail server-side for this repo; API-requested builds succeed. The `.github/workflows/pages.yml` Actions workflow is retained as a `workflow_dispatch`-only manual fallback — see OPS-4.
 **⚠ `main` is production:** every push to `main` auto-deploys to the live site. Feature-branch-then-merge is now a release gate, not just hygiene.
 **Last updated:** 2026-08-06
@@ -129,9 +129,30 @@ _(empty)_
 
   **Operational note (adds to OPS-4):** before diagnosing a stale live site as a repo/pipeline problem, **check githubstatus.com**. A green "Request Pages build" run with no published commit, across multiple pushes, is a strong upstream-outage signal — let the watcher retry rather than re-plumbing the pipeline.
 
+### v0.9.5 — Beam flow as pure gradient undulation
+
+- [x] **UX-11 — Dashes replaced with a sinusoidal brightness field: the beam undulates instead of pulsing** | Priority: P1 | S | Requested: 2026-08-06 (player) | Completed: 2026-08-06 | Owner: @claude | Branch: `feature/gradient-wave` → `main` @ `v0.9.5`
+  *Supersedes UX-10 (v0.9.4).* The v0.9.4 dashes were longer, wider, and lower-alpha than the beads before them, but they were still **dashes** — the player still read them as beads. Any segmented layer has ends, and ends read as objects riding the beam. The fix was to stop segmenting the light at all.
+
+  **Fix — no dashes, no edges, just a moving brightness field:**
+  - Flow is now a **sinusoidal brightness field along each beam**, rendered per frame as a **canvas linear gradient in the beam's own hue** from source to target. There is no dash pattern and no discrete element anywhere in the layer, so there is nothing with an edge to perceive as a bead.
+  - **Wavelength = half the beam length**, so every beam carries exactly **two gentle crests** regardless of how long it is — the undulation reads at the same rhythm on a short beam and a long one.
+  - The field **drifts source-to-target at ~4.5s per wavelength** — slow enough to read as the light breathing along its path rather than as travel.
+
+  **Verified:**
+  - **Animation frame-diff test** confirms the field actually moves frame to frame.
+  - **8.3ms median frame time** — the per-frame gradient construction stays within budget.
+  - **Zero console errors**; solvability harness green.
+
+  **Deploy: deploying** — merged to `main` and tagged `v0.9.5`; awaiting the "Request Pages build" run and published-commit confirmation (see OPS-4).
+
+  *Relevant to the Accessibility backlog item: hue remains the only always-on channel identifying a beam, so drawing the flow layer in the beam's own hue keeps that channel intact — per-color shape/pattern encoding stays open.*
+
 ### v0.9.4 — Beam flow reads as a wave
 
 - [x] **UX-10 — Beam flow beads replaced with long low-alpha same-hue dashes: motion reads as a luminous swell** | Priority: P1 | S | Requested: 2026-08-06 (player) | Completed: 2026-08-06 | Owner: @claude | Branch: `fix/beam-wave-pulse` → `main` @ `v0.9.4`
+  **⚠ Superseded by UX-11 (v0.9.5).** The dash approach below did not satisfy the player — the dashes still read as bead-like, because segments have ends. v0.9.5 removes dashes entirely in favour of a continuous sinusoidal gradient.
+
   *Follows BUG-7 (v0.9.2).* The v0.9.2 fix pulled the flow beads back from pure white to the hue's light tint, but a light tint under **additive** blending still adds toward white — short bright beads kept reading as whitish specks travelling a colored beam, so the motion looked like particles on the light rather than the light itself moving.
 
   **Fix — make the moving layer incapable of whitening:**
@@ -495,4 +516,5 @@ _None currently._
 - **v0.9.1** — 2026-08-06 — UX-9: **colored emitters**. Emitter **housing rings and nozzle wedges** are now tinted with the color that emitter casts, so its color is legible at a glance rather than only by tracing the beam or revealing the label; **hover brightens** the tint to the lighter core color. **Condensers deliberately stay neutral** — their identity is the blend pooling inside, not a color they own. Screenshot-verified on a dense level, zero console errors, solvability harness green. From `feature/colored-emitters`. Further advances the colorblind/accessibility item, though **color remains the only always-on channel** — shape-per-color encoding stays open in Backlog. **Deploying** — awaiting published-commit confirmation.
 - **v0.9.2** — 2026-08-06 — BUG-7: **beam hue wash-out fixed**. A player reported beams looking nearly white; the hue was being lost at the top of the layer stack — a **near-white core line** plus **pure-white traveling flow beads** additively washed out the colored layers beneath, worst on **mobile**, where the v0.6.2 screen-pixel stroke floors make those thin layers proportionally widest. Fixed with hue discipline across all beam layers: the **center line now draws in the saturated beam color**, the **flow beads draw in the hue's light tint** (luminance lifted for visibility, hue preserved rather than discarded to white), **beads slightly lengthened** so the motion still reads at lower contrast, and **mid-layer saturation raised**. Verified with desktop **and mobile DPR 3** screenshots, zero console errors, solvability harness green. From `fix/beam-color-saturation`. **Deploying** — awaiting published-commit confirmation.
 - **v0.9.3** — 2026-08-06 — BUG-8: **Roman numerals no longer stop at XX**. A player reached level 21 and found decimal digits in the level badge, the win arrival numeral, and the level selector — a **hardcoded `I`–`XX` array** from the first build had run out. Replaced with **standard subtractive Roman conversion** for any level number, plus **class-based long-numeral downsizing** in the badge, the win numeral, and the selector cells so wide numerals like `XXXVIII` fit their circle. Verified with a **15-case unit check** (including `XLIV`, `XCIX`, `MCMXCIX`) and a **Playwright selector check at 40 unlocked levels with zero overflow**, zero console errors, solvability harness green. From `fix/roman-numerals-forever`. **Deploying** — awaiting published-commit confirmation.
-- **v0.9.4** — 2026-08-06 — UX-10: **beam flow now reads as a wave**. Player-requested polish following v0.9.2: the short bright flow beads still read as **whitish specks** because a light tint under **additive** blending adds toward white no matter how the hue is chosen. They are replaced with **long, wide, low-alpha dashes drawn in the beam's own saturated hue** — additive same-hue light can only **brighten**, never desaturate — so the same energy is spread along the beam and the motion reads as a **subtle luminous swell travelling its length** rather than particles riding on top of it. Verified with a **mobile DPR 3 screenshot**, zero console errors, solvability harness green. From `fix/beam-wave-pulse`. **Deploying** — awaiting published-commit confirmation.
+- **v0.9.4** — 2026-08-06 — UX-10: **beam flow now reads as a wave**. Player-requested polish following v0.9.2: the short bright flow beads still read as **whitish specks** because a light tint under **additive** blending adds toward white no matter how the hue is chosen. They are replaced with **long, wide, low-alpha dashes drawn in the beam's own saturated hue** — additive same-hue light can only **brighten**, never desaturate — so the same energy is spread along the beam and the motion reads as a **subtle luminous swell travelling its length** rather than particles riding on top of it. Verified with a **mobile DPR 3 screenshot**, zero console errors, solvability harness green. From `fix/beam-wave-pulse`. **Superseded by v0.9.5** — the dashes still read as bead-like to the player.
+- **v0.9.5** — 2026-08-06 — UX-11: **beam flow is now pure gradient undulation**. The v0.9.4 dashes were still **dashes** — segments have ends, and ends read as beads no matter how long, wide, or low-alpha they are — so the segmented layer is **removed entirely**. Flow is now a **sinusoidal brightness field** along each beam, rendered per frame as a **canvas linear gradient in the beam's own hue**: no dashes, no edges, nothing discrete to perceive as an object riding the light. **Wavelength = half the beam length**, giving every beam exactly **two gentle crests** so the rhythm reads the same on short and long beams alike, drifting **source-to-target at ~4.5s per wavelength**. Verified with an **animation frame-diff test** confirming real motion, **8.3ms median frame time**, zero console errors, solvability harness green. From `feature/gradient-wave`. **Deploying** — awaiting published-commit confirmation.
