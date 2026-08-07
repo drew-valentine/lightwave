@@ -105,24 +105,27 @@
 
       // Widths floored in screen px: sub-pixel additive strokes alias into
       // shimmering grain on small boards (mobile view scales ~0.3).
-      ctx.strokeStyle = withAlpha(hex, 0.07);
+      // Hue discipline: every layer carries the beam's color — the center
+      // line is the saturated hue (a near-white core washed the color out),
+      // and the traveling beads sparkle in the light tint of the same hue.
+      ctx.strokeStyle = withAlpha(hex, 0.09);
       ctx.lineWidth = Math.max(7, 16 * view.scale);
       line(ctx, p1, p2);
 
-      ctx.strokeStyle = withAlpha(hex, 0.22);
+      ctx.strokeStyle = withAlpha(hex, 0.32);
       ctx.lineWidth = Math.max(3, 6 * view.scale);
       line(ctx, p1, p2);
 
-      ctx.strokeStyle = withAlpha(core, 0.9);
+      ctx.strokeStyle = withAlpha(hex, 0.95);
       ctx.lineWidth = Math.max(1.5, 1.8 * view.scale);
       line(ctx, p1, p2);
 
       if (!reducedMotion) {
-        // Light flowing along the beam.
-        const dash = Math.max(2.5, 3 * view.scale);
+        // Light flowing along the beam, in the beam's own light.
+        const dash = Math.max(3.5, 4.5 * view.scale);
         const gap = Math.max(24, 34 * view.scale);
-        ctx.strokeStyle = withAlpha('#ffffff', 0.5);
-        ctx.lineWidth = Math.max(1.8, 2.6 * view.scale);
+        ctx.strokeStyle = withAlpha(core, 0.85);
+        ctx.lineWidth = Math.max(2, 2.8 * view.scale);
         ctx.setLineDash([dash, gap]);
         ctx.lineDashOffset = -(t * 0.09) % (dash + gap);
         line(ctx, p1, p2);
